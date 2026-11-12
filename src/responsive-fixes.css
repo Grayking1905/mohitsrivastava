@@ -1,0 +1,8 @@
+/* Keep the decorative contact star within the mobile heading. */
+body { overflow-x: clip; }
+@media (max-width: 760px) {
+  .contact-asterisk { right: 2px; top: -24px; font-size: 27px; }
+  .contact-main { display: block; }
+  .contact-main h2 { font-size: clamp(58px, 16.4vw, 73px); }
+  .contact-orb { position: static; margin: 20px 0 0 auto; width: 74px; height: 74px; }
+}
