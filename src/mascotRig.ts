@@ -170,27 +170,56 @@ export function createMascotRig() {
     box(elbow,shirt,.335,.58,.35,0,-.23,0,.15)
     box(elbow,crease,.34,.125,.36,0,-.49,0,.055)
     const wrist=new T.Group();wrist.position.set(0,-.55,0);elbow.add(wrist)
-    ellipsoid(wrist,skin,[0,-.11,.012],[.16,.19,.085])
-    const fingers=Array.from({length:4},(_,i)=>{
-      const finger=new T.Group();finger.position.set((i-1.5)*.073,-.22,.005);wrist.add(finger)
-      ellipsoid(finger,skin,[0,-.07,0],[.043,.112-Math.abs(i-1.3)*.015,.045],20)
-      return finger
+    // A flattened palm with four distinct, jointed fingers. Mirror finger lengths
+    // with the thumb so the two hands are anatomically consistent.
+    box(wrist,skin,.26,.245,.115,0,-.10,.012,.052)
+    ellipsoid(wrist,skin,[0,.005,0],[.105,.078,.065])
+    const fingerLengths=[.205,.231,.214,.169]
+    const fingers=fingerLengths.map((length,i)=>{
+      const finger=new T.Group();finger.position.set(side*(i-1.5)*.071,-.205,.012);wrist.add(finger)
+      const radius=i===3?.027:.030
+      const segment=(parent:T.Group,len:number,r:number)=>{
+        const mesh=add(parent,new T.CapsuleGeometry(r,Math.max(.008,len-r*2),5,12),skin,0,-len/2,0)
+        return mesh
+      }
+      segment(finger,length*.48,radius)
+      const middle=new T.Group();middle.position.y=-length*.48;finger.add(middle)
+      segment(middle,length*.30,radius*.94)
+      const tip=new T.Group();tip.position.y=-length*.30;middle.add(tip)
+      segment(tip,length*.22,radius*.87)
+      return {base:finger,middle,tip,spread:side*(i-1.5)*.055}
     })
-    const thumb=ellipsoid(wrist,skin,[side*-.156,-.10,.04],[.065,.13,.06],20);thumb.rotation.z=side*.55
-    return {shoulder,elbow,wrist,fingers,thumb,side}
+    const thumb=new T.Group();thumb.position.set(-side*.125,-.075,.025);wrist.add(thumb)
+    ellipsoid(thumb,skin,[0,-.043,0],[.044,.073,.047])
+    const thumbTip=new T.Group();thumbTip.position.y=-.09;thumb.add(thumbTip)
+    add(thumbTip,new T.CapsuleGeometry(.033,.055,5,12),skin,0,-.045,0)
+    return {shoulder,elbow,wrist,fingers,thumb,thumbTip,side}
   })
 
   const trousers=paint('#343044'),sole=paint('#ece7db'),shoe=paint('#252331')
   box(body,trousers,1.3,.40,.71,0,.25,-.03,.13)
   const legs=[-1,1].map(side=>{
     const hip=new T.Group();hip.position.set(side*.34,.22,-.03);body.add(hip)
-    box(hip,trousers,.55,.72,.59,0,-.33,0,.16)
-    const knee=new T.Group();knee.position.y=-.68;hip.add(knee)
-    ellipsoid(knee,trousers,[0,0,0],[.245,.16,.26])
-    box(knee,trousers,.49,.69,.52,0,-.27,0,.10)
-    box(knee,shoe,.59,.24,.84,0,-.63,.13,.10)
-    box(knee,sole,.61,.075,.86,0,-.75,.13,.03)
-    for(let i=0;i<3;i++)box(knee,sole,.25,.018,.027,0,-.53-i*.045,.47,.007)
+    // One continuous trouser mesh bends over the knee, with no disconnected blocks.
+    const thigh=new T.Bone();hip.add(thigh)
+    const knee=new T.Bone();knee.position.y=-.68;thigh.add(knee)
+    const profile=[[.01,.10],[.22,.08],[.275,0],[.275,-.18],[.25,-.40],[.225,-.62],[.225,-.73],[.23,-.86],[.20,-1.08],[.175,-1.25],[.17,-1.30],[.01,-1.31]]
+    const geometry=new T.LatheGeometry(profile.slice().reverse().map(([r,y])=>new T.Vector2(r,y)),32)
+    geometry.scale(1,1,1.12)
+    const indices:number[]=[],weights:number[]=[]
+    for(let i=0;i<geometry.attributes.position.count;i++){
+      const lower=T.MathUtils.smoothstep(-geometry.attributes.position.getY(i),.48,.85)
+      indices.push(0,1,0,0);weights.push(1-lower,lower,0,0)
+    }
+    geometry.setAttribute('skinIndex',new T.Uint16BufferAttribute(indices,4))
+    geometry.setAttribute('skinWeight',new T.Float32BufferAttribute(weights,4))
+    const fabric=new T.SkinnedMesh(geometry,trousers);hip.add(fabric)
+    root.updateMatrixWorld(true);fabric.bind(new T.Skeleton([thigh,knee]))
+    const ankle=new T.Group();ankle.position.set(0,-.64,.06);knee.add(ankle)
+    box(ankle,sole,.47,.075,.76,0,-.10,.12,.035)
+    ellipsoid(ankle,shoe,[0,.015,.12],[.225,.15,.35])
+    box(ankle,shoe,.37,.20,.33,0,.05,-.035,.09)
+    for(let i=0;i<3;i++)tube(ankle,sole,[[-.12,.115-i*.012,.14+i*.06],[0,.14-i*.012,.15+i*.06],[.12,.115-i*.012,.14+i*.06]],.009)
     return {hip,knee,side}
   })
 
@@ -219,3 +248,4 @@ export function createMascotRig() {
   root.traverse((object)=>{if(object instanceof T.Mesh){object.geometry.computeBoundingSphere()}})
   return {root,body,head,eyes,arms,legs,book,turningPage,lens,phone,shirt,expression}
 }
+

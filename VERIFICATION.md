@@ -11,3 +11,10 @@
 - No browser console errors were observed during these checks.
 - Optional browser voice toggle is implemented; audible playback and installed voice availability were not independently verified. WebGL creation/context-loss fallback was reviewed in code, not fault-injected.
 - No remote service, GitHub profile, or QubitLab source was modified.
+
+## Hand and leg refinement
+
+- Mirrored finger lengths, three-joint finger curls, a separate articulated thumb and a flattened palm replace overlapping finger ovals.
+- Wave keeps a stable open hand and uses slower wrist motion; each pose resets every finger and thumb joint.
+- Continuous skinned trouser geometry bends across the knee. Tapered calves, shaped shoes and laces replace disconnected leg blocks.
+- Production build passed. Wave, dance, reading, magnifier, phone, punch, peekaboo and return-to-wave were exercised in the browser. Ink and color renderings were inspected; no console errors were reported.

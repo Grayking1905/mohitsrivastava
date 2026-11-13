@@ -169,7 +169,7 @@ export default function Companion(props: Props) {
         pose(w.sulk,-1.0,.17,-1.45)
         pose(w.sleep,.02,.18,-.1)
         if(index===1){
-          pose(w.wave,-.15,2.25+Math.sin(clock*7)*.09,-.40,Math.sin(clock*9)*.29)
+          pose(w.wave,-.12,2.18+Math.sin(clock*4.5)*.045,-.25,Math.sin(clock*4.5)*.19)
           pose(w.explore,-1.91,.38,-.70,.18)
           pose(w.selfie,-1.48,.71,-1.03,-.34)
           pose(w.think,-1.88,.17,-.78)
@@ -182,7 +182,18 @@ export default function Companion(props: Props) {
         }
         const reach=w.read*.30+peek*.43+(index===1?w.think*.47+w.sneeze*.37:0)
         arm.shoulder.rotation.set(sx,-side*reach,sz);arm.elbow.rotation.x=ex;arm.wrist.rotation.set(0,0,wz)
-        arm.fingers.forEach((finger,i)=>{finger.rotation.x=-(w.read*.86+w.punch*1.3+w.sulk*.75+w.selfie*.98+w.explore*(index===1?.85:0)+w.think*(index===1&&i!==1?.92:0))})
+        const grip=T.MathUtils.clamp(w.read*.55+w.punch+w.sulk*.5+(index===1?w.selfie*.72+w.explore*.72+w.think*.48:0),0,1)
+        const openHand=Math.max(w.wave,w.celebrate,w.panic,w.peekaboo,w.explain)
+        arm.fingers.forEach(({base,middle,tip,spread},i)=>{
+          // Curl along the palm's normal; no independent finger oscillation.
+          const curl=grip+(1-openHand)*(1-grip)*.10
+          const pointing=index===1&&i===0?w.think:0
+          base.rotation.set(-(.75*curl)*(1-pointing),0,spread*(1-grip)*(.65+openHand*.35))
+          middle.rotation.x=-1.05*curl*(1-pointing)
+          tip.rotation.x=-.65*curl*(1-pointing)
+        })
+        arm.thumb.rotation.set(-.25-grip*.45,side*grip*.35,-side*(.62-grip*.26))
+        arm.thumbTip.rotation.x=-grip*.75
         // Solve both arms against the book's edges, so palms follow the prop.
         if(w.read>.001){
           const target=new T.Vector3(side*.49,1.32,1.02)
@@ -197,7 +208,6 @@ export default function Companion(props: Props) {
           arm.elbow.rotation.x=T.MathUtils.lerp(ex,elbow,w.read)
           arm.wrist.rotation.x=2.2*w.read
           arm.wrist.rotation.y=side*.65*w.read
-          arm.thumb.rotation.x=-.55*w.read
         }
       })
       rig.book.visible=w.read>.03;rig.book.scale.setScalar(Math.max(.001,w.read));rig.book.rotation.z=Math.sin(clock*1.4)*.015*w.read
@@ -221,7 +231,7 @@ export default function Companion(props: Props) {
       renderer.domElement.removeEventListener('webglcontextlost',lost);resize.disconnect();intersection.disconnect()
       blend?.kill();framing?.kill();reaction?.kill();gsap.killTweensOf(p)
       const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>()
-      scene.traverse(object=>{if(object instanceof T.Mesh){geometries.add(object.geometry);for(const material of [object.material].flat())materials.add(material)}})
+      scene.traverse(object=>{if(object instanceof T.SkinnedMesh)object.skeleton.dispose();if(object instanceof T.Mesh){geometries.add(object.geometry);for(const material of [object.material].flat())materials.add(material)}})
       geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());quad.geometry.dispose();postMaterial.dispose();target.dispose();renderer.dispose();renderer.domElement.remove()
     }
   },[])
