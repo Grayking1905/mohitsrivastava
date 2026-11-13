@@ -1,148 +1,210 @@
 import { useEffect, useRef, useState } from 'react'
-import * as THREE from 'three'
-import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import * as T from 'three'
 import gsap from 'gsap'
+import { makePortrait, point } from './portrait'
 
-export type Trick = { name: 'wave' | 'jump' | 'spin'; count: number }
+export type Pose = 'idle' | 'wave' | 'read' | 'explore' | 'explain' | 'think' | 'celebrate' | 'spin'
+export type Gesture = { pose: Pose; sequence: number }
 
-export default function Companion({ trick, reduced, onInteract }: { trick: Trick; reduced: boolean; onInteract: () => void }) {
-  const mount = useRef<HTMLDivElement>(null)
-  const controls = useRef<{ perform: (name: Trick['name']) => void } | null>(null)
-  const [failed, setFailed] = useState(false)
+const poses = {
+  idle: [[.89,1.64,.01],[.86,1.16,.13]],
+  read: [[.73,1.52,.23],[.42,1.70,.91]],
+  explain: [[1.00,1.89,.27],[1.18,2.20,.55]],
+  wave: [[1.15,2.32,.13],[1.29,2.86,.30]],
+  explore: [[.88,1.86,.30],[.46,2.32,.94]],
+  think: [[.69,1.79,.37],[.30,2.46,.67]],
+  celebrate: [[1.08,2.31,.11],[1.27,2.81,.23]],
+}
+const up = point(0, 1, 0)
+
+export default function Companion(props: { gesture: Gesture; talking: boolean; reduced: boolean; onTap: () => void }) {
+  const host = useRef<HTMLDivElement>(null)
+  const current = useRef(props)
+  const [fallback, setFallback] = useState(false)
+  const pointer = useRef({ x: 0, y: 0, startX: 0, startY: 0, yaw: 0, lift: 0, down: false, moved: false, dirty: true })
+  useEffect(() => { current.current = props; pointer.current.dirty = true }, [props])
 
   useEffect(() => {
-    const host = mount.current!
-    let renderer: THREE.WebGLRenderer
-    try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' }) }
-    catch { setFailed(true); return }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75))
-    renderer.outputColorSpace = THREE.SRGBColorSpace
-    renderer.shadowMap.enabled = true
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap
-    host.appendChild(renderer.domElement)
+    const mount = host.current!
+    let renderer: T.WebGLRenderer
+    try { renderer = new T.WebGLRenderer({ alpha: true, antialias: true }) }
+    catch { setFallback(true); return }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.6))
+    renderer.outputColorSpace = T.SRGBColorSpace
+    renderer.toneMapping = T.ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1.2
     renderer.domElement.setAttribute('aria-hidden', 'true')
-    const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(37, 1, 0.1, 50)
-    camera.position.set(0, 2.1, 8.7)
-    camera.lookAt(0, 0.35, 0)
-    scene.add(new THREE.AmbientLight(0xffffff, 2.1))
-    const key = new THREE.DirectionalLight(0xfff5dd, 3.5)
-    key.position.set(-3, 7, 6); key.castShadow = true
-    key.shadow.mapSize.set(1024, 1024); key.shadow.normalBias = 0.04
-    scene.add(key)
-    const fill = new THREE.DirectionalLight(0xc7efd4, 1.5); fill.position.set(4, 3, -2); scene.add(fill)
-    const green = new THREE.MeshStandardMaterial({ color: '#a6c87b', roughness: 0.65 })
-    const cream = new THREE.MeshStandardMaterial({ color: '#f2f1d9', roughness: 0.72 })
-    const dark = new THREE.MeshStandardMaterial({ color: '#173e32', roughness: 0.68 })
-    const orange = new THREE.MeshStandardMaterial({ color: '#ec8c55', roughness: 0.55 })
-    const glow = new THREE.MeshBasicMaterial({ color: '#d7f2a1' })
-    const outline = new THREE.MeshBasicMaterial({ color: '#213e32', side: THREE.BackSide })
-    const robot = new THREE.Group(); scene.add(robot)
-    function box(parent: THREE.Object3D, size: number[], position: number[], material: THREE.Material, radius = 0.1) {
-      const geometry = new RoundedBoxGeometry(size[0], size[1], size[2], 3, radius)
-      const mesh = new THREE.Mesh(geometry, material)
-      mesh.position.set(position[0], position[1], position[2]); mesh.castShadow = true; mesh.receiveShadow = true
-      const edge = new THREE.Mesh(geometry, outline); edge.scale.setScalar(1.018); mesh.add(edge)
-      parent.add(mesh); return mesh
+    mount.append(renderer.domElement)
+    const scene = new T.Scene()
+    scene.add(new T.HemisphereLight('#fff2df', '#866eb8', 2.0))
+    const key = new T.DirectionalLight('#fff3e6', 2.2)
+    key.position.set(-3, 5, 6); scene.add(key)
+    const rim = new T.DirectionalLight('#d2b5ff', 3)
+    rim.position.set(3, 3, -4); scene.add(rim)
+    const camera = new T.PerspectiveCamera(34, 1, .1, 30)
+    const { root, torso, head, eyes, pupils, smile, mouth, teeth, arms, book, lens } = makePortrait()
+    scene.add(root)
+    const modes = { wave: 0, read: 0, explore: 0, explain: 0, think: 0, celebrate: 0 }
+    const spin = { y: 0 }
+    let sequence = -1, started = 0, visible = true
+    let transition: gsap.core.Tween | undefined
+    let rotation: gsap.core.Tween | undefined
+    const p = pointer.current
+    const gaze = { x: 0, y: 0 }
+    const resize = new ResizeObserver(() => {
+      const { width, height } = mount.getBoundingClientRect()
+      if (!width || !height) return
+      renderer.setSize(width, height)
+      camera.aspect = width / height
+      camera.position.set(0, 2.49, Math.max(8.45, 5.7 / camera.aspect))
+      camera.lookAt(0, 2.29, 0)
+      camera.updateProjectionMatrix()
+      p.dirty = true
+    })
+    resize.observe(mount)
+    const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; p.dirty = true })
+    observer.observe(mount)
+    const lost = (event: Event) => {
+      event.preventDefault()
+      setFallback(true)
+      renderer.setAnimationLoop(null)
     }
-    function sphere(parent: THREE.Object3D, r: number, position: number[], material: THREE.Material) {
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 16), material)
-      mesh.position.set(position[0], position[1], position[2]); mesh.castShadow = true; parent.add(mesh); return mesh
-    }
-    const body = new THREE.Group(); robot.add(body)
-    box(body, [1.35, 1.2, 0.85], [0, -0.35, 0], green, 0.22)
-    box(body, [0.68, 0.42, 0.07], [0, -0.35, 0.45], cream, 0.08)
-    // An original, modeled code emblem on the chest.
-    for (const side of [-1, 1]) for (const angle of [-1, 1]) {
-      const bar = box(body, [0.18, 0.045, 0.035], [side * 0.18, -0.35 + angle * 0.055, 0.5], dark, 0.015)
-      bar.rotation.z = side * angle * -0.7
-    }
-    sphere(body, 0.055, [-0.38, -0.7, 0.44], orange)
-    for (let i = 0; i < 3; i++) box(body, [0.09, 0.025, 0.03], [0.2 + i * 0.13, -0.72, 0.44], dark, 0.01)
-    const head = new THREE.Group(); head.position.y = 0.85; body.add(head)
-    box(head, [2.05, 1.55, 1.2], [0, 0, 0], cream, 0.32)
-    box(head, [1.65, 0.95, 0.18], [0, -0.02, 0.59], dark, 0.22)
-    const eyes = new THREE.Group(); head.add(eyes)
-    for (const x of [-0.4, 0.4]) box(eyes, [0.22, 0.43, 0.08], [x, 0.03, 0.72], glow, 0.1)
-    const smileCurve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(-0.17, -0.24, 0.73), new THREE.Vector3(0, -0.38, 0.73), new THREE.Vector3(0.17, -0.24, 0.73))
-    head.add(new THREE.Mesh(new THREE.TubeGeometry(smileCurve, 16, 0.021, 8, false), glow))
-    for (const x of [-1.06, 1.06]) {
-      box(head, [0.18, 0.55, 0.6], [x, -0.02, 0], green, 0.08)
-      sphere(head, 0.1, [x * 1.09, 0, 0], orange)
-    }
-    box(head, [0.09, 0.38, 0.09], [0, 0.93, 0], dark, 0.04)
-    const antenna = sphere(head, 0.15, [0, 1.17, 0], orange)
-    const arms: THREE.Group[] = []
-    for (const side of [-1, 1]) {
-      const arm = new THREE.Group(); arm.position.set(side * 0.81, 0.05, 0); body.add(arm)
-      sphere(arm, 0.19, [0, 0, 0], dark)
-      box(arm, [0.28, 0.68, 0.35], [side * 0.08, -0.38, 0], green, 0.14)
-      box(arm, [0.36, 0.33, 0.4], [side * 0.1, -0.79, 0], cream, 0.13)
-      arm.rotation.z = side * 0.12; arms.push(arm)
-      box(robot, [0.3, 0.4, 0.35], [side * 0.4, -1.08, 0], dark, 0.08)
-      box(robot, [0.65, 0.35, 0.85], [side * 0.44, -1.35, 0.16], cream, 0.13)
-    }
-    robot.rotation.y = -0.22; robot.rotation.z = -0.035
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(2.15, 2.25, 0.12, 80), new THREE.MeshStandardMaterial({ color: '#e0e6c9', roughness: 1 }))
-    base.position.y = -1.62; base.receiveShadow = true; scene.add(base)
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.15, 0.014, 8, 100), dark)
-    ring.rotation.x = Math.PI / 2; ring.position.y = -1.55; scene.add(ring)
-    const shadow = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.ShadowMaterial({ opacity: 0.12 }))
-    shadow.rotation.x = -Math.PI / 2; shadow.position.y = -1.68; shadow.receiveShadow = true; scene.add(shadow)
-    const pointer = new THREE.Vector2()
-    let dragStart: number | null = null, dragging = false, dragRotation = -0.22, busy = false, visible = true
-    const timelines = new Set<gsap.core.Timeline>()
-    const perform = (name: Trick['name']) => {
-      if (busy) return
-      busy = true
-      const tl = gsap.timeline({ onComplete: () => { busy = false; timelines.delete(tl) } }); timelines.add(tl)
-      if (reduced) { tl.to(antenna.scale, { x: 1.3, y: 1.3, z: 1.3, duration: 0.1 }).to(antenna.scale, { x: 1, y: 1, z: 1, duration: 0.1 }); return }
-      if (name === 'jump') {
-        tl.to(robot.scale, { y: 0.88, x: 1.08, duration: 0.16 }).to(robot.position, { y: 1.2, duration: 0.36, ease: 'power2.out' })
-          .to(robot.scale, { y: 1.08, x: 0.95, duration: 0.25 }, '<').to(robot.position, { y: 0, duration: 0.4, ease: 'bounce.out' })
-          .to(robot.scale, { y: 1, x: 1, duration: 0.2 }, '<')
-      } else if (name === 'spin') tl.to(robot.rotation, { y: robot.rotation.y + Math.PI * 2, duration: 1.2, ease: 'power2.inOut' }).call(() => { dragRotation = robot.rotation.y })
-      else tl.to(arms[1].rotation, { z: -2.4, duration: 0.3 }).to(arms[1].rotation, { z: -1.8, repeat: 5, yoyo: true, duration: 0.15 }).to(arms[1].rotation, { z: 0.12, duration: 0.3 })
-    }
-    controls.current = { perform }
-    const onMove = (event: PointerEvent) => {
-      const rect = host.getBoundingClientRect()
-      pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, (event.clientY - rect.top) / rect.height * 2 - 1)
-      if (dragStart !== null) { const delta = event.clientX - dragStart; if (Math.abs(delta) > 4) dragging = true; if (!busy) robot.rotation.y = dragRotation + delta * 0.012 }
-    }
-    const onDown = (event: PointerEvent) => { dragStart = event.clientX; dragging = false; host.setPointerCapture(event.pointerId) }
-    const onUp = () => { if (dragStart !== null) { dragRotation = robot.rotation.y; dragStart = null; if (!dragging) onInteract() } }
-    const onCancel = () => { dragStart = null; dragging = false; dragRotation = robot.rotation.y }
-    host.addEventListener('pointermove', onMove); host.addEventListener('pointerdown', onDown); host.addEventListener('pointerup', onUp); host.addEventListener('pointercancel', onCancel)
-    const resize = new ResizeObserver(() => { const { width, height } = host.getBoundingClientRect(); renderer.setSize(width, height); camera.aspect = width / height; camera.updateProjectionMatrix() })
-    resize.observe(host)
-    const visibility = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting }); visibility.observe(host)
-    const render = (time: number) => {
-      if (!visible || document.hidden) return
-      const t = time / 1000
-      if (!reduced) {
-        head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, pointer.x * 0.22, 0.05)
-        head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, pointer.y * 0.1, 0.05)
-        body.position.y = Math.sin(t * 1.8) * 0.035
-        const blink = Math.sin(t * 0.7) > 0.996 ? 0.12 : 1
-        eyes.scale.y = THREE.MathUtils.lerp(eyes.scale.y, blink, 0.35)
-        if (!busy) arms[0].rotation.z = -0.12 + Math.sin(t * 1.8) * 0.05
-      }
-      renderer.render(scene, camera)
-    }
-    renderer.setAnimationLoop(render)
-    const contextLost = (event: Event) => { event.preventDefault(); setFailed(true); renderer.setAnimationLoop(null) }
-    renderer.domElement.addEventListener('webglcontextlost', contextLost)
-    return () => {
-      controls.current = null; timelines.forEach(t => t.kill()); resize.disconnect(); visibility.disconnect(); renderer.setAnimationLoop(null)
-      host.removeEventListener('pointermove', onMove); host.removeEventListener('pointerdown', onDown); host.removeEventListener('pointerup', onUp); host.removeEventListener('pointercancel', onCancel)
-      renderer.domElement.removeEventListener('webglcontextlost', contextLost)
-      const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>()
-      scene.traverse(obj => { if (obj instanceof THREE.Mesh) { geometries.add(obj.geometry); (Array.isArray(obj.material) ? obj.material : [obj.material]).forEach(m => materials.add(m)) } })
-      geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); renderer.dispose(); renderer.domElement.remove()
-    }
-  }, [reduced, onInteract])
+    renderer.domElement.addEventListener('webglcontextlost', lost)
 
-  useEffect(() => { if (trick.count) controls.current?.perform(trick.name) }, [trick])
-  return <div ref={mount} className="companion-canvas" role="img" aria-label="Bit, a friendly 3D green robot. Drag to rotate, or use the Wave, Jump and Spin buttons below.">{failed && <div className="robot-fallback"><img src="/favicon.svg" alt="Bit the friendly robot"/><span>Hi, I'm Bit. Let's explore!</span></div>}</div>
+    const elbow = point(0,0,0), wrist = point(0,0,0), target = point(0,0,0), direction = point(0,0,0)
+    const segment = (part: T.Object3D, from: T.Vector3, to: T.Vector3) => {
+      direction.subVectors(to, from)
+      part.position.copy(from).lerp(to, .5)
+      part.scale.y = direction.length() + .12
+      part.quaternion.setFromUnitVectors(up, direction.normalize())
+    }
+
+    renderer.setAnimationLoop(time => {
+      if (!visible || document.hidden) return
+      const { gesture, talking, reduced } = current.current
+      if (gesture.sequence !== sequence) {
+        sequence = gesture.sequence
+        started = time
+        transition?.kill()
+        const next = { wave: 0, read: 0, explore: 0, explain: 0, think: 0, celebrate: 0 }
+        if (gesture.pose !== 'idle' && gesture.pose !== 'spin') next[gesture.pose] = 1
+        if (reduced) Object.assign(modes, next)
+        else transition = gsap.to(modes, { ...next, duration: .48, ease: 'power2.inOut' })
+        if (gesture.pose === 'spin' && !reduced) {
+          rotation?.kill()
+          rotation = gsap.to(spin, { y: spin.y + 2*Math.PI, duration: 1.32, ease: 'power2.inOut' })
+        }
+        p.dirty = true
+      }
+      if (reduced && !p.dirty) return
+      const t = reduced ? 0 : (time - started) / 1000
+      const sway = reduced ? 0 : Math.sin(time / 730) * .028
+      gaze.x = T.MathUtils.lerp(gaze.x, p.x, .14)
+      gaze.y = T.MathUtils.lerp(gaze.y, p.y, .14)
+      const lookX = reduced ? 0 : gaze.x, lookY = reduced ? 0 : gaze.y
+      root.position.y = (reduced ? 0 : p.lift) + modes.celebrate * Math.abs(Math.sin(t * 5)) * .34 + sway
+      root.rotation.y = (reduced ? 0 : spin.y + p.yaw) + lookX * .10 - .09
+      torso.rotation.z = modes.explore * -.10 + modes.think * .07 + modes.celebrate * Math.sin(t * 8) * .065
+      torso.position.y = sway
+      head.rotation.x = modes.read * .31 + modes.explore * .08 - modes.think * .10 + lookY * .14
+      head.rotation.y = modes.explore * -.23 + modes.read * Math.sin(t * 1.65) * .16 + lookX * .25
+      head.rotation.z = modes.think * -.14 + modes.wave * .07
+      const blink = reduced ? 1 : 1 - .96 * Math.pow(Math.max(0, Math.cos((time / 1000 + .8) * 1.35)), 165)
+      eyes.forEach(eye => { eye.scale.y = blink })
+      pupils.forEach(pupil => {
+        pupil.position.x = lookX * .055 + modes.read * Math.sin(t * 2.4) * .055
+        pupil.position.y = -.045 * modes.read - lookY * .025
+      })
+      smile.visible = !talking || reduced
+      mouth.visible = teeth.visible = !smile.visible
+      mouth.scale.y = .42 + .65 * Math.abs(Math.sin(t * 12 + Math.sin(t * 4)))
+      book.visible = modes.read > .025
+      book.scale.setScalar(Math.max(.001, modes.read))
+      book.rotation.z = Math.sin(t * 1.35) * .06
+      lens.visible = modes.explore > .025
+      lens.scale.setScalar(Math.max(.001, modes.explore))
+
+      arms.forEach((arm, index) => {
+        const side = index ? 1 : -1
+        const assign = (name: keyof typeof poses, mix: number) => {
+          if (mix <= 0) return
+          const [e, w] = poses[name]
+          elbow.lerp(target.set(side*e[0],e[1],e[2]), mix)
+          wrist.lerp(target.set(side*w[0],w[1],w[2]), mix)
+        }
+        elbow.set(0,0,0); wrist.set(0,0,0)
+        assign('idle', 1)
+        assign('read', modes.read)
+        assign('explain', modes.explain)
+        assign('celebrate', modes.celebrate)
+        wrist.y += Math.sin(t * 5 + side) * (.17*modes.explain + .13*modes.celebrate)
+        if (index) {
+          assign('wave', modes.wave); assign('explore', modes.explore); assign('think', modes.think)
+          wrist.x += Math.sin(t * 11) * .20 * modes.wave
+          lens.position.copy(wrist); lens.rotation.z = -.14 + Math.sin(t * 2) * .12
+        }
+        segment(arm.upper, arm.shoulder, elbow)
+        arm.elbow.position.copy(elbow)
+        segment(arm.fore, elbow, wrist)
+        arm.cuff.position.copy(wrist).lerp(elbow, .16)
+        arm.cuff.quaternion.copy(arm.fore.quaternion)
+        arm.hand.position.copy(wrist)
+        arm.hand.quaternion.setFromUnitVectors(up, direction.subVectors(wrist, elbow).normalize())
+      })
+      renderer.render(scene, camera)
+      p.dirty = false
+    })
+    return () => {
+      renderer.setAnimationLoop(null)
+      renderer.domElement.removeEventListener('webglcontextlost', lost)
+      resize.disconnect(); observer.disconnect()
+      transition?.kill(); rotation?.kill(); gsap.killTweensOf(p)
+      const materials = new Set<T.Material>()
+      scene.traverse(object => {
+        if (!(object instanceof T.Mesh)) return
+        object.geometry.dispose()
+        for (const material of [object.material].flat()) materials.add(material)
+      })
+      materials.forEach(material => material.dispose())
+      renderer.dispose(); renderer.domElement.remove()
+    }
+  }, [])
+
+  const release = (tap: boolean) => {
+    const p = pointer.current
+    if (tap && p.down && !p.moved) current.current.onTap()
+    p.down = false
+    gsap.to(p, { yaw: 0, lift: 0, duration: .46, ease: 'power3.out', overwrite: true })
+  }
+  return (
+    <div
+      ref={host}
+      className="avatar-canvas"
+      role="img"
+      aria-label="Cartoon 3D portrait of Mohit with side-swept hair, aviator glasses, a white shirt and dark tie"
+      onPointerMove={event => {
+        const p = pointer.current
+        const rect = event.currentTarget.getBoundingClientRect()
+        p.x = T.MathUtils.clamp((event.clientX - rect.left) / rect.width * 2 - 1, -1, 1)
+        p.y = T.MathUtils.clamp((event.clientY - rect.top) / rect.height * 2 - 1, -1, 1)
+        if (!p.down) return
+        const dx = event.clientX - p.startX, dy = event.clientY - p.startY
+        p.moved ||= Math.hypot(dx, dy) > 5
+        if (props.reduced) return
+        p.yaw = T.MathUtils.clamp(dx * .017, -Math.PI, Math.PI)
+        p.lift = T.MathUtils.clamp(-dy / 100, -.08, .59)
+      }}
+      onPointerDown={event => {
+        if (event.button !== 0) return
+        gsap.killTweensOf(pointer.current)
+        Object.assign(pointer.current, { down: true, moved: false, startX: event.clientX, startY: event.clientY })
+        event.currentTarget.setPointerCapture(event.pointerId)
+      }}
+      onPointerUp={() => release(true)}
+      onPointerCancel={() => release(false)}
+      onPointerLeave={() => { pointer.current.x = pointer.current.y = 0 }}
+    >
+      {fallback && <div className="avatar-fallback"><img src="/avatar-poster.jpg" alt="" /></div>}
+    </div>
+  )
 }
