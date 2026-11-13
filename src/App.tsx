@@ -1,10 +1,11 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ArrowDown, ArrowUpRight, ArrowRight, Check, Copy, Github, Linkedin, Volume2, VolumeX, Pause, Play, X, Sparkles, RotateCcw, SlidersHorizontal } from 'lucide-react'
 import type { Pose, Gesture } from './Companion'
 import type { Cue } from './Guide'
 import ProjectTour from './ProjectTour'
+import useMascotActivity from './useMascotActivity'
 import { profile, projects } from './content'
 
 const Companion = lazy(() => import('./Companion'))
@@ -32,9 +33,15 @@ const tricks: { pose: Pose; label: string; line: string }[] = [
   { pose: 'selfie', label: 'Strike a pose', line: 'New profile picture? This is my good side.' },
   { pose: 'celebrate', label: 'Celebrate', line: 'Little experiments. Big possibilities.' },
   { pose: 'think', label: 'Think', line: 'What if we tried it a different way?' },
+  { pose: 'hiccup', label: 'Hiccup', line: 'A tiny interruption in the event loop.' },
+  { pose: 'peekaboo', label: 'Peekaboo', line: 'Still here. Just hiding from that one bug.' },
+  { pose: 'dizzy', label: 'Get dizzy', line: 'Too many tabs. Too many tabs!' },
+  { pose: 'sulk', label: 'Sulk', line: 'The test failed. I need a moment.' },
+  { pose: 'punch', label: 'Fight a bug', line: 'One bug down. Let’s keep going.' },
 ]
 
 export default function App() {
+  const { activity, wake, sleepNow } = useMascotActivity()
   const [chapter, setChapter] = useState('home')
   const [compact, setCompact] = useState(() => matchMedia('(max-width: 760px)').matches)
   const [gesture, setGesture] = useState<Gesture>({ pose: 'idle', sequence: 0 })
@@ -59,7 +66,8 @@ export default function App() {
   chapterRef.current = chapter
   voiceRef.current = voice
 
-  const cue = useCallback((next: Cue) => {
+  const cue = useCallback((next: Cue, interacted = true) => {
+    if (interacted) wake()
     clearTimeout(talkTimer.current)
     setGesture(g => ({ pose: next.pose, sequence: g.sequence + 1 }))
     setLine(next.line)
@@ -74,7 +82,7 @@ export default function App() {
       }
     }
     talkTimer.current = window.setTimeout(() => setTalking(false), 4200)
-  }, [])
+  }, [wake])
 
   useEffect(() => {
     cue(chapterCues[chapter])
@@ -128,7 +136,7 @@ export default function App() {
   function trick(action: typeof tricks[number]) {
     clearTimeout(resetTimer.current)
     cue({ pose: action.pose, line: action.line })
-    resetTimer.current = window.setTimeout(() => cue(chapterCues[chapterRef.current]), 6500)
+    if (!['read', 'explore', 'think'].includes(action.pose)) resetTimer.current = window.setTimeout(() => cue(chapterCues[chapterRef.current], false), 6500)
   }
   function toggleVoice() {
     const next = !voice
@@ -144,10 +152,25 @@ export default function App() {
       clearTimeout(copyTimer.current); copyTimer.current = window.setTimeout(() => setCopied(false), 2600)
     } catch { setCopyFailed(true) }
   }
+  const displayLine = activity === 'asleep' ? 'Taking a tiny break. Move your mouse or press a key to wake me.' : activity === 'drowsy' ? 'Still here… just resting my eyes for a moment.' : activity === 'waking' ? 'Oh, hey! Ready for the next idea?' : line
+  useLayoutEffect(() => {
+    if (reduced) return
+    const text = gsap.fromTo('.speech p, .mobile-speech p', { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' })
+    return () => { text.kill() }
+  }, [displayLine, reduced])
+  function takeNap() {
+    clearTimeout(resetTimer.current); clearTimeout(talkTimer.current)
+    setTalking(false)
+    if ('speechSynthesis' in window) speechSynthesis.cancel()
+    const next = chapterCues[chapterRef.current]
+    setGesture(g => ({ pose: next.pose, sequence: g.sequence + 1 }))
+    setLine(next.line)
+    sleepNow()
+  }
   const project = projects[0]
   const words = 'I’m a software engineer who likes making complex ideas feel simple. I build thoughtful interfaces, explore unfamiliar problems, and learn by making things you can actually use.'.split(' ')
 
-  return <div className={`experience chapter-${chapter}`}>
+  return <div className={`experience chapter-${chapter}`} data-activity={activity}>
     <a className="skip-link" href="#about">Skip introduction</a>
     <header className="masthead">
       <a className="identity" href="#home"><span className="identity-symbol">m<span>✳</span></span><span><strong>{profile.name}</strong><small>Software engineer & curious human</small></span></a>
@@ -155,13 +178,13 @@ export default function App() {
     </header>
 
     <div ref={stage} className={`character-stage ${reduced ? 'static-stage' : ''}`} data-chapter={chapter}>
-      <div className="speech" key={line}><span className="speech-label">MOHIT.EXE</span><p aria-live="polite">{line}</p><span className="speech-corner"/></div>
-      <div className="character-viewport" data-pose={gesture.pose}>
+      <div className="speech" data-activity={activity}><span className="speech-label">MOHIT.EXE</span><p aria-live="polite">{displayLine}</p><span className="speech-corner"/></div>
+      <div className="character-viewport" data-pose={gesture.pose} data-activity={activity}>
         <Suspense fallback={<div className="avatar-fallback"><img src="/avatar-poster.svg" alt="Loading Mohit’s 3D avatar"/></div>}>
-          {!(compact && chapter === 'play') && <Companion gesture={gesture} talking={talking} reduced={reduced} ink={ink} shirtColor={shirt} closeup={chapter === 'home' || chapter === 'contact'} onTap={() => trick(tricks[0])}/>}
+          {!(compact && chapter === 'play') && <Companion gesture={gesture} talking={talking} reduced={reduced} ink={ink} shirtColor={shirt} closeup={chapter === 'home' || chapter === 'contact'} activity={activity} onWake={wake} onTap={() => trick(tricks[0])}/>}
         </Suspense>
       </div>
-      <span className="character-hint">DRAG ME AROUND <span>↔</span> TAP TO SAY HI</span>
+      <span className="character-hint">DRAG TO PICK ME UP <span>↔</span> HOVER TO WAKE ME</span>
     </div>
 
     <main>
@@ -195,10 +218,10 @@ export default function App() {
         <div className="content-right">
           <div className="section-label">03 / A SMALL DETOUR</div>
           <h2 className="display-heading">Code is serious.<br/><span>I’m not always.</span></h2>
-          <p className="section-description">A few things my digital self can do.<br/>Pick one. He’s a pretty good sport.</p>
+          <p className="section-description">A few things my digital self can do.<br/>Pick a reaction, or leave me idle and watch me drift off.</p>
           <div className="play-controls">
-          {compact && <div className="mobile-stage"><div className="mobile-speech"><span className="speech-label">MOHIT.EXE</span><p aria-live="polite">{line}</p></div><div className="mobile-model"><Suspense fallback={<img src="/avatar-poster.svg" alt="Mohit’s illustrated avatar"/>}><Companion gesture={gesture} talking={talking} reduced={reduced} ink={ink} shirtColor={shirt} onTap={() => trick(tricks[0])}/></Suspense></div></div>}
-          <div className="trick-grid">{tricks.map(action => <button key={action.pose} aria-pressed={gesture.pose === action.pose} onClick={() => trick(action)}><span>{action.label}</span><ArrowUpRight size={17}/></button>)}</div>
+          {compact && <div className="mobile-stage" data-activity={activity}><div className="mobile-speech"><span className="speech-label">MOHIT.EXE</span><p aria-live="polite">{displayLine}</p></div><div className="mobile-model"><Suspense fallback={<img src="/avatar-poster.svg" alt="Mohit’s illustrated avatar"/>}><Companion gesture={gesture} talking={talking} reduced={reduced} ink={ink} shirtColor={shirt} activity={activity} onWake={wake} onTap={() => trick(tricks[0])}/></Suspense></div></div>}
+          <div className="trick-grid">{tricks.map(action => <button key={action.pose} aria-pressed={gesture.pose === action.pose && activity === 'awake'} onClick={() => trick(action)}><span>{action.label}</span><ArrowUpRight size={17}/></button>)}<button onClick={takeNap} aria-pressed={activity === 'asleep'}><span>Take a nap</span><span aria-hidden="true">zZ</span></button></div>
           <div className="wardrobe"><span className="small-label">A CHANGE OF SHIRT?</span><div className="swatches">{[['#f1e8db','Paper'], ['#365af0','Cobalt'], ['#f17842','Tangerine'], ['#303746','Midnight']].map(([color, name]) => <button key={color} aria-label={`${name} shirt`} aria-pressed={shirt === color && !ink} style={{ background: color }} onClick={() => { clearTimeout(resetTimer.current); setShirt(color); setInk(false); cue({ pose: 'selfie', line: `${name}. A fresh look for the next build.` }) }}/>)}</div><button className="line-link" onClick={() => setInk(!ink)}>{ink ? 'Try full color' : 'Back to ink'} <Sparkles size={16}/></button></div></div>
         </div>
       </section>

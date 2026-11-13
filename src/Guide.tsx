@@ -96,7 +96,7 @@ export default function Guide({ chapter, cue, reduced }: { chapter: string; cue:
         <div className="guide-stage">
           <span className="stage-orbit" aria-hidden="true"/>
           <span className="stage-glow" aria-hidden="true"/>
-          <Suspense fallback={<div className="avatar-fallback"><img src="/avatar-poster.jpg" alt="" /></div>}>
+          <Suspense fallback={<div className="avatar-fallback"><img src="/avatar-poster.svg" alt="" /></div>}>
             <Companion gesture={gesture} talking={talking || speaking} reduced={reduced} onTap={() => setOverride({ ...actions[0] })}/>
           </Suspense>
         </div>
@@ -112,4 +112,3 @@ export default function Guide({ chapter, cue, reduced }: { chapter: string; cue:
     </aside>
   )
 }
-

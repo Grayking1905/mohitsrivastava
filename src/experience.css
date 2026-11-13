@@ -22,3 +22,15 @@
   .trick-grid,.wardrobe{position:relative}
 }
 .avatar-canvas{position:relative}.avatar-canvas>.avatar-fallback{position:absolute;inset:0;background:transparent}
+/* Quiet life between interactions. These states share the same facial/body rig. */
+.avatar-canvas{touch-action:none}
+.sleep-letters{position:absolute;top:20%;right:12%;color:var(--paper);z-index:2;pointer-events:none;font-family:'DM Mono',monospace;font-weight:600}
+.sleep-letters i{display:block;position:absolute;opacity:0;animation:float-sleep 3s ease-in-out infinite;font-style:normal;font-size:22px;text-shadow:1px 2px 0 #14213970}
+.sleep-letters i:nth-child(2){animation-delay:1s;font-size:29px}.sleep-letters i:nth-child(3){animation-delay:2s;font-size:37px}
+.chapter-about .sleep-letters,.chapter-play .sleep-letters,.chapter-collection .sleep-letters{color:#20334d}
+.speech{transition:box-shadow .5s ease,border-color .5s ease}
+.speech[data-activity=asleep]{box-shadow:3px 4px 0 #111d2f40}
+.speech p,.mobile-speech p{will-change:transform,opacity}
+@keyframes float-sleep{0%{opacity:0;transform:translate(0,20px) rotate(-7deg)}20%{opacity:.8}80%{opacity:.7}100%{opacity:0;transform:translate(33px,-65px) rotate(9deg)}}
+.reduce-motion .sleep-letters i{opacity:1;position:static;display:inline;margin:0 2px}
+@media(max-width:760px){.mobile-stage .sleep-letters{right:15%;top:15%}.sleep-letters i{font-size:15px}.sleep-letters i:nth-child(2){font-size:20px}.sleep-letters i:nth-child(3){font-size:25px}.trick-grid button{min-height:48px}}
