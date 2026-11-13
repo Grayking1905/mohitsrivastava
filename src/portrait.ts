@@ -6,14 +6,26 @@ const ink = '#1c1337'
 
 function paint(color: string, roughness = .84, metalness = 0) {
   const material = new T.MeshStandardMaterial({ color, roughness, metalness })
+  const inkUniform = { value: 1 }
+  material.userData.ink = inkUniform
   material.onBeforeCompile = shader => {
+    shader.uniforms.uInk = inkUniform
+    shader.fragmentShader = 'uniform float uInk;\n' + shader.fragmentShader
     shader.fragmentShader = shader.fragmentShader.replace('#include <dithering_fragment>', `
       vec3 rgb = gl_FragColor.rgb;
-      float brightness = dot(rgb, vec3(0.299, 0.587, 0.114));
-      vec2 grid = mat2(0.707, -0.707, 0.707, 0.707) * gl_FragCoord.xy;
-      float radius = mix(0.39, 0.07, brightness);
-      float dots = 1.0 - smoothstep(radius - 0.10, radius + 0.12, length(fract(grid / 3.6) - .5));
-      gl_FragColor.rgb = mix(rgb, rgb * vec3(.59, .49, .63), dots * .54);
+      float light = dot(rgb, vec3(0.299, 0.587, 0.114));
+      // A print-like ordered screen: every surface keeps its lighting and volume.
+      vec2 pixel = floor(gl_FragCoord.xy / 1.25);
+      vec2 p = mod(pixel, 4.0);
+      float bayer = 0.0;
+      if (p.y < 1.0) bayer = p.x < 1.0 ? 0.0 : p.x < 2.0 ? 8.0 : p.x < 3.0 ? 2.0 : 10.0;
+      else if (p.y < 2.0) bayer = p.x < 1.0 ? 12.0 : p.x < 2.0 ? 4.0 : p.x < 3.0 ? 14.0 : 6.0;
+      else if (p.y < 3.0) bayer = p.x < 1.0 ? 3.0 : p.x < 2.0 ? 11.0 : p.x < 3.0 ? 1.0 : 9.0;
+      else bayer = p.x < 1.0 ? 15.0 : p.x < 2.0 ? 7.0 : p.x < 3.0 ? 13.0 : 5.0;
+      float printed = step((bayer + 0.5) / 16.0, smoothstep(0.12, 0.93, light));
+      vec3 paper = vec3(.956, .953, .918);
+      vec3 ink = vec3(.065, .082, .11);
+      gl_FragColor.rgb = mix(rgb, mix(ink, paper, printed), uInk);
       #include <dithering_fragment>
     `)
   }
@@ -28,12 +40,12 @@ export function makePortrait() {
   head.position.set(0, 2.62, .04)
   torso.add(head)
 
-  const skin = paint('#c88c65'), warm = paint('#ac654c'), blush = paint('#bd745b')
+  const skin = paint('#d8ac89'), warm = paint('#ac654c'), blush = paint('#bd745b')
   const hair = paint('#271b29'), lock = paint('#322431'), streak = paint('#493340')
   const black = paint(ink), frame = paint('#a67b4c', .29, .42), glint = new T.MeshBasicMaterial({ color: '#fff4d1' })
   const shirt = paint('#f1e8db'), crease = paint('#d7cbd1'), tie = paint('#241a38'), pants = paint('#34264c')
   const citron = paint('#f7ca67'), violet = paint('#745adb'), paper = paint('#fff3cf')
-  const brown = paint('#543128'), white = paint('#fff4df'), inner = paint('#4a2431')
+  const white = paint('#fff4df'), inner = paint('#4a2431')
   const mesh = (parent: T.Object3D, g: T.BufferGeometry, m: T.Material, x = 0, y = 0, z = 0) => {
     const item = new T.Mesh(g, m)
     item.position.set(x, y, z); parent.add(item); return item
@@ -100,21 +112,19 @@ export function makePortrait() {
   }
   stroke(head, streak, [[-.39, 1.72, .56], [-.59, 1.67, .72], [-.78, 1.48, .64], [-.88, 1.26, .44]], .02)
 
-  const eyes: T.Group[] = [], pupils: T.Group[] = []
+  const eyes: T.Group[] = [], pupils: T.Group[] = [], brows: T.Mesh[] = []
   for (const side of [-1, 1]) {
     const x = side * .393
     const eye = new T.Group()
-    eye.position.set(x, .822, .65); head.add(eye); eyes.push(eye)
-    ball(eye, warm, 0, 0, 0, .243, .167, .087)
-    ball(eye, white, 0, .004, .041, .222, .146, .096)
+    eye.position.set(x, .822, .695); head.add(eye); eyes.push(eye)
     const pupil = new T.Group()
-    pupil.position.set(0, 0, .127); eye.add(pupil); pupils.push(pupil)
-    ball(pupil, brown, 0, 0, 0, .104, .119, .035)
-    ball(pupil, black, 0, 0, .024, .061, .088, .017)
-    ball(pupil, glint, -.031, .041, .045, .026, .029, .011)
-    ball(pupil, glint, .035, -.036, .041, .011, .013, .008)
-    const brow = ball(head, hair, side * .401, 1.077, .668, .244, .058, .042)
-    brow.rotation.z = side * -.13
+    pupil.position.set(0, 0, .04); eye.add(pupil); pupils.push(pupil)
+    ball(pupil, black, 0, 0, .004, .109, .19, .037)
+    ball(pupil, glint, -.031, .074, .044, .032, .036, .009)
+    ball(pupil, glint, .035, -.036, .041, .012, .014, .008)
+    const brow = ball(head, hair, side * .401, 1.15, .68, .198, .06, .041)
+    brow.rotation.z = side * -.07
+    brows.push(brow)
 
     const aviator = [[.08,.94,.774],[.22,1.015,.815],[.50,1.015,.79],[.746,.95,.692],[.772,.75,.684],[.643,.533,.711],[.421,.493,.765],[.213,.576,.801],[.11,.758,.801]]
     stroke(head, black, aviator.map(([a,b,c]) => [side*a,b,c]), .027, true)
@@ -128,7 +138,7 @@ export function makePortrait() {
   ball(head, skin, 0, .553, .832, .173, .121, .142)
   for (const side of [-1, 1]) ball(head, warm, side * .109, .512, .853, .062, .047, .062)
   const smile = new T.Group(); smile.position.set(0, .299, .651); head.add(smile)
-  stroke(smile, warm, [[-.257,.037,-.008],[-.14,-.026,.068],[.012,-.051,.083],[.15,-.017,.06],[.257,.046,-.005]], .024)
+  stroke(smile, black, [[-.235,.044,-.008],[-.13,-.054,.068],[.012,-.083,.083],[.15,-.038,.06],[.235,.048,-.005]], .025)
   stroke(smile, blush, [[-.106,-.065,.061],[0,-.089,.074],[.105,-.062,.062]], .017)
   const mouth = ball(head, inner, 0, .282, .726, .117, .078, .018)
   const teeth = ball(head, white, 0, .312, .745, .092, .018, .011)
@@ -186,5 +196,5 @@ export function makePortrait() {
   mesh(lens, new T.CircleGeometry(.244, 48), new T.MeshBasicMaterial({ color: '#bfbdff', opacity: .23, transparent: true, depthWrite: false }), 0, .59, .036)
   box(lens, violet, .139, .377, .14, 0, .26, .022, .06)
   stroke(lens, glint, [[-.145,.62,.067],[-.123,.71,.067],[-.048,.768,.067]], .016)
-  return { root, torso, head, eyes, pupils, smile, mouth, teeth, arms, book, lens }
+  return { root, torso, head, eyes, pupils, brows, smile, mouth, teeth, arms, book, lens, shirt }
 }

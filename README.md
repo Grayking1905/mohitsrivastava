@@ -1,50 +1,29 @@
-# Mohit Srivastava — interactive portfolio
+# Mohit — an explorable portfolio
 
-A custom React + TypeScript portfolio with a Three.js cartoon portrait based on Mohit’s photo, GSAP scroll reveals, a quantum gate preview, and a playable bug-hunt mini-game.
+React 19 + TypeScript + Three.js + GSAP, built with Vite. Original identity, copy, procedural cartoon portrait and interactions. QubitLab is the only featured project; two future slots remain intentionally empty.
 
-## Local development
+## Run
 
 ```sh
 npm install
 npm run dev
-```
-
-Open the local URL printed by Vite. For a production build:
-
-```sh
 npm run build
-npm run preview
 ```
 
-The static production output is `dist/`. It can be deployed to any static host. `.openai/hosting.json` identifies its Sites preview.
+## Edit
 
-## Personalize
+- `src/content.ts`: profile, email, social links and project destinations.
+- `src/App.tsx`: six chapters, narration, character actions, wardrobe, project dialog and contact actions.
+- `src/Companion.tsx`: WebGL lifecycle, gaze, drag/lift spring, rig animation and fourteen pose states.
+- `src/portrait.ts`: original procedural geometry based on the supplied photo, face rig, glasses, shirt/tie, book and magnifier; custom ordered ink shading.
+- `src/ProjectTour.tsx`: interactive single-qubit H/X/Z walkthrough. It is a deliberately limited illustrative demo; the full app is linked.
+- `src/experience.css`: full-screen scenes, scroll composition, responsive mobile character stage and reduced motion.
+- `public/avatar-poster.svg`: original static fallback when WebGL is unavailable; no user photograph is published.
 
-- `src/content.ts`: name, contact details, social links, QubitLab description and links, project tags, and future project slots.
-- `src/App.tsx`: personal introduction, section content, toolkit, and interactive quantum preview.
-- `src/portrait.ts` and `src/Companion.tsx`: Three.js avatar, jointed arms, reading and exploration props, and interactive motion.
-- `src/Guide.tsx` and `src/ProjectTour.tsx`: chapter cues, optional browser narration, and the QubitLab walkthrough.
-- `src/Game.tsx`: keyboard-accessible bug hunt with timed and untimed play. Best score is stored only on the visitor's device.
-- `src/styles.css`: colors, typography, layouts, breakpoints, and motion preferences.
+Desktop: the character moves from the right of the hero to the left of the story, then returns for contact. Mobile: the playground has its own sticky character stage, leaving gesture buttons unobstructed. Optional narration uses the browser's installed voices and is off by default. Motion follows the system preference and can be changed in experience settings.
 
-Only QubitLab is featured. Project slots 02 and 03 are deliberately empty. To add a project, add its data in `projects` and adapt its visual in `App.tsx`, then remove the corresponding number from `futureProjectSlots`.
+The Sites identity and existing owner-only audience are preserved in `.openai/hosting.json`. Publication uses the Sites source workflow.
 
-## Experience details
+## Reference investigation
 
-- Mohit’s avatar follows the pointer. Drag to rotate or lift the avatar on desktop, or use the labeled controls.
-- Sound is off by default and uses locally synthesized tones only after opt-in.
-- The motion control and the operating system's reduced-motion preference disable ambient animation. Robot tricks use a minimal visual response in reduced-motion mode.
-- WebGL failure falls back to a still of the modeled avatar.
-- Three.js is loaded separately; offscreen rendering is skipped, pixel ratio is capped, and GPU resources are disposed on unmount.
-- Quantum gate buttons illustrate H, X, and Z applied independently to the initial state |0⟩. This is an interactive portfolio concept, not an embedded screenshot of QubitLab.
-- The mini-game supports mouse, touch, and Tab + Enter. Untimed mode removes the time limit.
-- Contact uses the verified profile email via `mailto:` and a copy button. There is no form backend or data collection.
-- Fonts are requested from Google Fonts, with local fallbacks. The character and other artwork need no remote image assets.
-
-## Content sources and creative direction
-
-QubitLab's description and technology stack come from its [repository README](https://github.com/Grayking1905/qubit-lab/blob/main/README.md) and package manifest. The live app URL comes from the repository homepage field. Profile name, GitHub account, email, and LinkedIn were verified from the connected GitHub profile/public profile.
-
-The requested references informed the character-led storytelling, playful interaction, and editorial pacing. All layout, copy, character geometry, and visual assets in this implementation are original. No reference-site code or models are included.
-
-No employment history, client names, testimonials, skill ratings, or performance metrics are invented. Revise the personal statement to match your preferred voice before sharing publicly.
+Rea 6.9.0 was installed as requested and used to inspect three public shipped scripts from sebg.ch. The investigation established procedural geometry, a print-like shader, hierarchical animation, scroll staging and interaction patterns. This is an original reconstruction of those ideas, not a copy of the site's source, assets, biography or projects. Static analysis was partial and does not establish complete feature parity. See `REFERENCE-NOTES.md` for the bounded evidence.

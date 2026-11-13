@@ -1,126 +1,232 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { ArrowDown, ArrowUpRight, ArrowRight, Github, Linkedin, Volume2, VolumeX, Pause, Play, Code2, Sparkles, Terminal, Braces, Layers, Plus, Check, Copy, Menu, X, Atom, Gamepad2 } from 'lucide-react'
-import Guide from './Guide'
+import { ArrowDown, ArrowUpRight, ArrowRight, Check, Copy, Github, Linkedin, Volume2, VolumeX, Pause, Play, X, Sparkles, RotateCcw, SlidersHorizontal } from 'lucide-react'
+import type { Pose, Gesture } from './Companion'
 import type { Cue } from './Guide'
 import ProjectTour from './ProjectTour'
-import { profile, projects, futureProjectSlots } from './content'
-import Game from './Game'
+import { profile, projects } from './content'
 
+const Companion = lazy(() => import('./Companion'))
 gsap.registerPlugin(ScrollTrigger)
-const nav = [{ id: 'about', name: 'About' }, { id: 'work', name: 'QubitLab' }, { id: 'play', name: 'Playground' }]
+const chapters = ['home', 'about', 'work', 'play', 'collection', 'contact']
+const labels = ['Hello', 'About', 'QubitLab', 'Play', 'Work', 'Contact']
+const chapterCues: Record<string, Cue> = {
+  home: { pose: 'idle', line: 'Hey, I’m Mohit. Come explore a few things I’ve made.' },
+  about: { pose: 'read', line: 'Always learning. Usually with too many tabs open.' },
+  work: { pose: 'explain', line: 'Meet QubitLab. Big quantum ideas, small experiments. Try a gate.' },
+  play: { pose: 'explore', line: 'A tiny break from the serious stuff. What should I do?' },
+  collection: { pose: 'think', line: 'One project, and room for the next “what if?”.' },
+  contact: { pose: 'wave', line: 'Your next idea could start with a hello.' },
+}
+const tricks: { pose: Pose; label: string; line: string }[] = [
+  { pose: 'wave', label: 'Say hello', line: 'Hello, human on the other side of the screen!' },
+  { pose: 'dance', label: 'Dance', line: 'The build passed. You know what that means.' },
+  { pose: 'read', label: 'Read', line: 'Just one more chapter. And one more coffee.' },
+  { pose: 'explore', label: 'Investigate', line: 'Found something interesting in the details.' },
+  { pose: 'panic', label: 'Break prod', line: 'It worked on my machine… okay, breathe.' },
+  { pose: 'fly', label: 'Take flight', line: 'Deploying to the cloud. Literally.' },
+  { pose: 'vanish', label: 'Disappear', line: 'Gone to clear my cache. Be right back.' },
+  { pose: 'spin', label: 'Spin', line: 'A fresh perspective on the problem.' },
+  { pose: 'sneeze', label: 'Sneeze', line: 'Ah… ah… too many bugs in the air!' },
+  { pose: 'selfie', label: 'Strike a pose', line: 'New profile picture? This is my good side.' },
+  { pose: 'celebrate', label: 'Celebrate', line: 'Little experiments. Big possibilities.' },
+  { pose: 'think', label: 'Think', line: 'What if we tried it a different way?' },
+]
 
 export default function App() {
-  const [soundOn, setSoundOn] = useState(false)
-  const [reduced, setReduced] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-  const [active, setActive] = useState('home')
-  const [menu, setMenu] = useState(false)
+  const [chapter, setChapter] = useState('home')
+  const [compact, setCompact] = useState(() => matchMedia('(max-width: 760px)').matches)
+  const [gesture, setGesture] = useState<Gesture>({ pose: 'idle', sequence: 0 })
+  const [line, setLine] = useState(chapterCues.home.line)
+  const [talking, setTalking] = useState(false)
+  const [voice, setVoice] = useState(false)
+  const [reduced, setReduced] = useState(() => matchMedia('(prefers-reduced-motion: reduce)').matches)
+  const [ink, setInk] = useState(true)
+  const [shirt, setShirt] = useState('#f1e8db')
+  const [settings, setSettings] = useState(false)
   const [copied, setCopied] = useState(false)
   const [copyFailed, setCopyFailed] = useState(false)
-  const [cue, setCue] = useState<Cue | null>(null)
-  const soundRef = useRef(false)
-  const audio = useRef<AudioContext | null>(null)
-  const main = useRef<HTMLDivElement>(null)
-  const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const sound = useCallback((pitch = 520) => {
-    if (!soundRef.current) return
-    try {
-      audio.current ??= new AudioContext()
-      if (audio.current.state === 'suspended') void audio.current.resume()
-      const oscillator = audio.current.createOscillator(), gain = audio.current.createGain()
-      oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(pitch, audio.current.currentTime)
-      gain.gain.setValueAtTime(0.055, audio.current.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audio.current.currentTime + 0.18)
-      oscillator.connect(gain); gain.connect(audio.current.destination); oscillator.start(); oscillator.stop(audio.current.currentTime + 0.2)
-      oscillator.onended = () => { oscillator.disconnect(); gain.disconnect() }
-    } catch { /* Sound is an optional enhancement. */ }
+  const [details, setDetails] = useState(false)
+  const stage = useRef<HTMLDivElement>(null)
+  const dialog = useRef<HTMLDialogElement>(null)
+  const lastFocus = useRef<HTMLElement | null>(null)
+  const talkTimer = useRef<number | undefined>(undefined)
+  const resetTimer = useRef<number | undefined>(undefined)
+  const copyTimer = useRef<number | undefined>(undefined)
+  const voiceRef = useRef(false)
+  const chapterRef = useRef(chapter)
+  chapterRef.current = chapter
+  voiceRef.current = voice
+
+  const cue = useCallback((next: Cue) => {
+    clearTimeout(talkTimer.current)
+    setGesture(g => ({ pose: next.pose, sequence: g.sequence + 1 }))
+    setLine(next.line)
+    setTalking(true)
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel()
+      if (voiceRef.current) {
+        const utterance = new SpeechSynthesisUtterance(next.line)
+        utterance.lang = 'en-IN'; utterance.rate = 1
+        utterance.onend = utterance.onerror = () => setTalking(false)
+        speechSynthesis.speak(utterance)
+      }
+    }
+    talkTimer.current = window.setTimeout(() => setTalking(false), 4200)
   }, [])
+
+  useEffect(() => {
+    cue(chapterCues[chapter])
+    clearTimeout(resetTimer.current)
+  }, [chapter, cue])
+
   useEffect(() => {
     document.documentElement.classList.toggle('reduce-motion', reduced)
     const context = gsap.context(() => {
-      if (reduced) return
-      gsap.from('.hero-reveal', { y: 35, opacity: 0, duration: 0.85, stagger: 0.1, ease: 'power3.out', clearProps: 'all' })
-      gsap.utils.toArray<HTMLElement>('.reveal').forEach(element => gsap.from(element, { y: 38, opacity: 0, duration: 0.8, ease: 'power2.out', scrollTrigger: { trigger: element, start: 'top 92%', once: true }, clearProps: 'all' }))
-      gsap.to('.scroll-line', { scaleX: 1, ease: 'none', scrollTrigger: { trigger: document.documentElement, start: 'top top', end: 'bottom bottom', scrub: true } })
-    }, main)
+      const mobile = compact
+      if (!reduced) {
+        gsap.from('.hero-title > span', { y: 90, opacity: 0, stagger: .11, duration: 1, ease: 'power3.out', clearProps: 'all' })
+        gsap.utils.toArray<HTMLElement>('.about-word').forEach((word, i) => {
+          gsap.fromTo(word, { opacity: .23 }, { opacity: 1, scrollTrigger: { trigger: '#about', start: `top ${75 - i * 1.1}%`, end: `top ${63 - i * 1.1}%`, scrub: true } })
+        })
+        if (!mobile) {
+          gsap.fromTo(stage.current, { x: 0 }, { x: '-60vw', ease: 'none', scrollTrigger: { trigger: '#about', start: 'top bottom', end: 'top 25%', scrub: 1 } })
+          gsap.to(stage.current, { x: 0, ease: 'none', immediateRender: false, scrollTrigger: { trigger: '#contact', start: 'top bottom', end: 'top 25%', scrub: 1 } })
+        }
+        gsap.utils.toArray<HTMLElement>('.reveal').forEach(el => gsap.from(el, { y: 34, opacity: 0, duration: .7, clearProps: 'all', scrollTrigger: { trigger: el, start: 'top 94%', once: true } }))
+      }
+      for (const id of chapters) ScrollTrigger.create({ trigger: `#${id}`, start: 'top 48%', end: 'bottom 48%', onToggle: s => { if (s.isActive) setChapter(id) } })
+    })
     return () => context.revert()
-  }, [reduced])
+  }, [reduced, compact])
+
   useEffect(() => {
-    const layout = document.querySelector<HTMLElement>('.journey-layout')!
-    const hero = document.querySelector<HTMLElement>('#home')!
-    const size = new ResizeObserver(() => layout.style.setProperty('--hero-height', hero.offsetHeight + 'px'))
-    size.observe(hero)
-    const observer = new IntersectionObserver(entries => { entries.forEach(entry => { if (entry.isIntersecting) setActive(entry.target.id) }) }, { rootMargin: '-20% 0px -55% 0px' })
-    document.querySelectorAll('.journey-content > section[id]').forEach(section => observer.observe(section))
-    const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const onPreference = (event: MediaQueryListEvent) => setReduced(event.matches)
-    preference.addEventListener('change', onPreference)
-    return () => { observer.disconnect(); size.disconnect(); preference.removeEventListener('change', onPreference); clearTimeout(copyTimer.current); void audio.current?.close() }
+    const breakpoint = matchMedia('(max-width: 760px)')
+    const onBreakpoint = (e: MediaQueryListEvent) => setCompact(e.matches)
+    breakpoint.addEventListener('change', onBreakpoint)
+    const preference = matchMedia('(prefers-reduced-motion: reduce)')
+    const change = (e: MediaQueryListEvent) => setReduced(e.matches)
+    preference.addEventListener('change', change)
+    return () => {
+      breakpoint.removeEventListener('change', onBreakpoint)
+      preference.removeEventListener('change', change)
+      clearTimeout(talkTimer.current); clearTimeout(resetTimer.current); clearTimeout(copyTimer.current)
+      if ('speechSynthesis' in window) speechSynthesis.cancel()
+    }
   }, [])
+
   useEffect(() => {
-    if (!menu) return
-    const close = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenu(false) }
-    window.addEventListener('keydown', close); return () => window.removeEventListener('keydown', close)
-  }, [menu])
-  const explain = useCallback((next: Cue) => setCue(next), [])
-  const copyEmail = async () => {
-    try { await navigator.clipboard.writeText(profile.email); setCopied(true); setCopyFailed(false); sound(660); clearTimeout(copyTimer.current); copyTimer.current = setTimeout(() => setCopied(false), 2600) }
-    catch { setCopyFailed(true) }
+    if (!details) return
+    lastFocus.current = document.activeElement as HTMLElement
+    dialog.current?.showModal()
+    const saved = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = saved; lastFocus.current?.focus() }
+  }, [details])
+
+  function trick(action: typeof tricks[number]) {
+    clearTimeout(resetTimer.current)
+    cue({ pose: action.pose, line: action.line })
+    resetTimer.current = window.setTimeout(() => cue(chapterCues[chapterRef.current]), 6500)
   }
+  function toggleVoice() {
+    const next = !voice
+    setVoice(next); voiceRef.current = next
+    if (next) cue({ pose: gesture.pose, line })
+    else if ('speechSynthesis' in window) { speechSynthesis.cancel(); setTalking(false) }
+  }
+  async function copyEmail() {
+    try {
+      await navigator.clipboard.writeText(profile.email)
+      setCopied(true); setCopyFailed(false)
+      cue({ pose: 'celebrate', line: 'Email copied. I’m looking forward to your idea.' })
+      clearTimeout(copyTimer.current); copyTimer.current = window.setTimeout(() => setCopied(false), 2600)
+    } catch { setCopyFailed(true) }
+  }
+  const project = projects[0]
+  const words = 'I’m a software engineer who likes making complex ideas feel simple. I build thoughtful interfaces, explore unfamiliar problems, and learn by making things you can actually use.'.split(' ')
 
-  return <div ref={main}>
-    <a className="skip-link" href="#main">Skip to content</a>
-    <header className="site-header">
-      <a className="brand" href="#home" aria-label="Mohit Srivastava, home"><span className="brand-mark">m<span>.</span></span><span>MOHIT<br/><b>SRIVASTAVA</b></span></a>
-      <nav className={menu ? 'main-nav open' : 'main-nav'} aria-label="Main navigation">{nav.map(item => <a key={item.id} href={`#${item.id}`} onClick={() => setMenu(false)} aria-current={active === item.id ? 'location' : undefined}>{item.name}</a>)}</nav>
-      <a className="contact-nav" href="#contact">Let’s talk <ArrowUpRight size={17}/></a>
-      <button className="menu-toggle icon-button" onClick={() => setMenu(!menu)} aria-label={menu ? 'Close navigation' : 'Open navigation'} aria-expanded={menu}>{menu ? <X/> : <Menu/>}</button>
-      <div className="scroll-line"/>
+  return <div className={`experience chapter-${chapter}`}>
+    <a className="skip-link" href="#about">Skip introduction</a>
+    <header className="masthead">
+      <a className="identity" href="#home"><span className="identity-symbol">m<span>✳</span></span><span><strong>{profile.name}</strong><small>Software engineer & curious human</small></span></a>
+      <a className="pill contact-pill" href="#contact">Have an idea? <ArrowUpRight size={18}/></a>
     </header>
-    <main id="main" className="journey-layout">
-      <div className="journey-content">
-      <section className="hero section-shell" id="home">
-        <div className="hero-copy">
-          <div className="eyebrow hero-reveal">SOFTWARE ENGINEER</div>
-          <h1 className="hero-reveal">I’m Mohit.<br/>I build things<br/><em>you can play with.</em></h1>
-          <p className="hero-description hero-reveal">I turn complex ideas into software you can explore. Start with QubitLab, or take the tour with my 3D guide.</p>
-          <div className="hero-buttons hero-reveal">
-            <a className="button primary" href="#work">Explore QubitLab <ArrowUpRight size={18}/></a>
-            <a className="text-link" href="#about">Take the tour <ArrowDown size={17}/></a>
-          </div>
-        </div>
-      </section>
 
-      <section id="about" className="about-section section-shell">
-        <div className="section-kicker reveal">ABOUT ME</div>
-        <div className="about-grid">
-          <div className="about-heading reveal"><h2>Engineer by craft.<br/><span className="serif">Explorer at heart.</span></h2></div>
-          <div className="about-copy reveal"><p className="large-copy">I like making complicated things<br className="desktop-break"/> feel <span>surprisingly simple.</span></p><p>For me, engineering is equal parts logic and imagination. It’s connecting the dots between a tricky problem, a thoughtful interface, and the code that brings it all together.</p><p>QubitLab is one expression of that curiosity: turning abstract quantum concepts into something you can see, touch, and experiment with.</p><div className="about-note"><Sparkles size={20}/><span>Good software works.<br/><b>Great software makes you want to explore.</b></span></div><a className="text-link" href={profile.github} target="_blank" rel="noreferrer">Find me where the code lives <Github size={18}/></a></div>
-        </div>
-        <div className="toolkit reveal"><div className="toolkit-title"><span className="mono">MY TOOLKIT</span><span>Different tools.<br/>Same builder’s mindset.</span></div><div className="toolkit-items">{[{ icon: Braces, name: 'TypeScript', label: 'THE LANGUAGE' }, { icon: Code2, name: 'React / Next.js', label: 'THE INTERFACE' }, { icon: Atom, name: 'Three.js', label: 'THE DIMENSION' }, { icon: Terminal, name: 'Python / FastAPI', label: 'THE ENGINE' }, { icon: Layers, name: 'PostgreSQL', label: 'THE MEMORY' }].map(({ icon: Icon, name, label }) => <div className="tool-item" key={name}><Icon size={24}/><span>{name}</span><small>{label}</small></div>)}</div></div>
-      </section>
-
-      <section id="work" className="work-section section-shell">
-        <div className="section-kicker reveal">FEATURED PROJECT</div>
-        <div className="section-heading reveal"><h2>QubitLab</h2></div>
-        {projects.map(project => <article className="project reveal" key={project.id}><ProjectTour onCue={explain}/><div className="project-detail"><div><span className="project-kind mono">INTERACTIVE LEARNING · FULL STACK</span><p>{project.description}</p><div className="project-tags">{project.tags.map(tag => <span key={tag}>{tag}</span>)}</div></div><div className="project-actions"><a href={project.live} target="_blank" rel="noreferrer" className="button primary">Explore QubitLab <ArrowUpRight size={18}/></a><a href={project.repository} target="_blank" rel="noreferrer" className="text-link"><Github size={17}/> View source code</a></div></div><div className="project-features"><span><Braces/> Visual circuit builder</span><span><Atom/> 3D quantum states</span><span><Sparkles/> AI learning companion</span></div></article>)}
-        <div className="future-projects reveal">{futureProjectSlots.map(number => <div className="future-project" key={number}><span className="mono">PROJECT / {number}</span><Plus size={30}/><h3>Room for the next idea.</h3><p>A future build will live here.</p><span className="coming-tag">STILL A BLANK CANVAS</span></div>)}</div>
-      </section>
-
-      <section id="play" className="play-section section-shell">
-        <div className="section-kicker reveal">PLAYGROUND</div>
-        <div className="play-layout"><div className="play-copy reveal"><span className="sidequest-icon"><Gamepad2 size={30}/></span><h2>All work?<br/><span className="serif">Not around here.</span></h2><p>Sometimes the best way to solve a problem is to play with it. Here’s a small one just for you.</p><div className="quest-instructions"><span>01 <b>Start the game.</b></span><span>02 <b>Find and catch all 8 bugs.</b></span><span>03 <b>Enjoy a very clean deployment.</b></span></div><span className="handwritten">Your inner debugger has been waiting for this.</span></div><div className="reveal"><Game sound={sound}/></div></div>
-      </section>
-
-      <section id="contact" className="contact-section section-shell">
-        <div className="section-kicker reveal">CONTACT</div>
-        <div className="contact-main reveal"><div><span className="contact-pretitle"><span className="status-dot"/> LET’S MAKE SOMETHING THAT MATTERS</span><h2>Got a good<br/><span className="serif">“what if”?</span><span className="contact-asterisk">✳</span></h2><p>A project, an opportunity, or a particularly good idea.<br/>I’d love to hear about it.</p></div><a className="contact-orb" href={`mailto:${profile.email}`} aria-label={`Email ${profile.email}`}><ArrowUpRight/><span>LET’S TALK</span></a></div>
-        <div className="contact-links reveal"><a className="email-link" href={`mailto:${profile.email}`}>{profile.email}</a><button className="copy-button" onClick={copyEmail} aria-label="Copy email address">{copied ? <Check size={18}/> : <Copy size={18}/>}<span aria-live="polite">{copied ? 'Copied!' : copyFailed ? 'Select email to copy' : 'Copy email'}</span></button><div className="social-links"><a href={profile.github} target="_blank" rel="noreferrer"><Github size={18}/> GitHub <ArrowUpRight size={14}/></a><a href={profile.linkedin} target="_blank" rel="noreferrer"><Linkedin size={18}/> LinkedIn <ArrowUpRight size={14}/></a></div></div>
-      </section>
+    <div ref={stage} className={`character-stage ${reduced ? 'static-stage' : ''}`} data-chapter={chapter}>
+      <div className="speech" key={line}><span className="speech-label">MOHIT.EXE</span><p aria-live="polite">{line}</p><span className="speech-corner"/></div>
+      <div className="character-viewport" data-pose={gesture.pose}>
+        <Suspense fallback={<div className="avatar-fallback"><img src="/avatar-poster.svg" alt="Loading Mohit’s 3D avatar"/></div>}>
+          {!(compact && chapter === 'play') && <Companion gesture={gesture} talking={talking} reduced={reduced} ink={ink} shirtColor={shirt} closeup={chapter === 'home' || chapter === 'contact'} onTap={() => trick(tricks[0])}/>}
+        </Suspense>
       </div>
-      <Guide chapter={active} cue={active === "work" ? cue : null} reduced={reduced}/>
+      <span className="character-hint">DRAG ME AROUND <span>↔</span> TAP TO SAY HI</span>
+    </div>
+
+    <main>
+      <section className="scene hero-scene" id="home">
+        <div className="hero-topline"><span className="tiny-status"/> AN EXPLORABLE PORTFOLIO <span>VOL. 01 / 2026</span></div>
+        <h1 className="hero-title"><span>Ideas into</span><span>interfaces.</span><span className="outline-word">And a little</span><span className="hero-play">play<span className="asterisk">✳</span></span></h1>
+        <div className="hero-bottom"><a href="#about" className="scroll-invite"><span className="round-arrow"><ArrowDown size={21}/></span><span>Scroll to meet the human<br/><b>behind the code.</b></span></a><span className="hero-index">01 — 06</span></div>
+      </section>
+
+      <section className="scene about-scene" id="about">
+        <div className="content-right">
+          <div className="section-label">01 / THE HUMAN</div>
+          <h2 className="about-statement">{words.map((word, i) => <span className="about-word" key={i}>{word} </span>)}</h2>
+          <div className="about-foot reveal"><p>My favorite part? That moment when an idea stops being a sketch and starts responding to you.</p><a className="line-link" href={profile.github} target="_blank" rel="noreferrer">Meet me on GitHub <ArrowUpRight size={20}/></a></div>
+          <div className="tool-strip reveal"><span>React</span><span>TypeScript</span><span>Three.js</span><span>Python</span><span>FastAPI</span></div>
+        </div>
+      </section>
+
+      <section className="scene work-scene" id="work">
+        <div className="content-right">
+          <div className="section-label">02 / AN IDEA MADE REAL</div>
+          <div className="work-heading"><div><span className="small-label">FEATURED PROJECT · 01</span><h2>QubitLab<span>↗</span></h2></div><button className="pill" onClick={() => setDetails(true)}>The story <ArrowUpRight size={18}/></button></div>
+          <p className="work-intro">Quantum computing.<br/><span>Out of the textbook. Into your hands.</span></p>
+          <div className="browser-frame reveal"><div className="browser-chrome"><span><i/><i/><i/></span><span>QubitLab / interactive preview</span><span>↗</span></div><ProjectTour onCue={cue}/></div>
+          <div className="work-bottom"><p>Build a circuit. See its state.<br/>Understand what just happened.</p><a className="pill light-pill" href={project.live} target="_blank" rel="noreferrer">Launch QubitLab <ArrowUpRight size={18}/></a></div>
+          <div className="project-stack">{project.tags.map(tag => <span key={tag}>{tag}</span>)}</div>
+        </div>
+      </section>
+
+      <section className="scene play-scene" id="play">
+        <div className="content-right">
+          <div className="section-label">03 / A SMALL DETOUR</div>
+          <h2 className="display-heading">Code is serious.<br/><span>I’m not always.</span></h2>
+          <p className="section-description">A few things my digital self can do.<br/>Pick one. He’s a pretty good sport.</p>
+          <div className="play-controls">
+          {compact && <div className="mobile-stage"><div className="mobile-speech"><span className="speech-label">MOHIT.EXE</span><p aria-live="polite">{line}</p></div><div className="mobile-model"><Suspense fallback={<img src="/avatar-poster.svg" alt="Mohit’s illustrated avatar"/>}><Companion gesture={gesture} talking={talking} reduced={reduced} ink={ink} shirtColor={shirt} onTap={() => trick(tricks[0])}/></Suspense></div></div>}
+          <div className="trick-grid">{tricks.map(action => <button key={action.pose} aria-pressed={gesture.pose === action.pose} onClick={() => trick(action)}><span>{action.label}</span><ArrowUpRight size={17}/></button>)}</div>
+          <div className="wardrobe"><span className="small-label">A CHANGE OF SHIRT?</span><div className="swatches">{[['#f1e8db','Paper'], ['#365af0','Cobalt'], ['#f17842','Tangerine'], ['#303746','Midnight']].map(([color, name]) => <button key={color} aria-label={`${name} shirt`} aria-pressed={shirt === color && !ink} style={{ background: color }} onClick={() => { clearTimeout(resetTimer.current); setShirt(color); setInk(false); cue({ pose: 'selfie', line: `${name}. A fresh look for the next build.` }) }}/>)}</div><button className="line-link" onClick={() => setInk(!ink)}>{ink ? 'Try full color' : 'Back to ink'} <Sparkles size={16}/></button></div></div>
+        </div>
+      </section>
+
+      <section className="scene collection-scene" id="collection">
+        <div className="content-right">
+          <div className="section-label">04 / THE WORKBENCH</div>
+          <div className="collection-title"><h2>Built. Building.<br/><em>To be continued.</em></h2><span>01 PROJECT<br/>02 OPEN SLOTS</span></div>
+          <button className="project-row" onClick={() => setDetails(true)}><span>01</span><strong>QubitLab</strong><span>QUANTUM LEARNING</span><ArrowUpRight/></button>
+          <div className="project-row future-row"><span>02</span><strong>The next experiment</strong><span>SPACE RESERVED</span><span>+</span></div>
+          <div className="project-row future-row"><span>03</span><strong>Something unexpected</strong><span>SPACE RESERVED</span><span>+</span></div>
+          <p className="collection-note">More ideas are on the way. These spaces stay open until there’s something worth sharing.</p>
+        </div>
+      </section>
+
+      <section className="scene contact-scene" id="contact">
+        <div className="contact-content"><div className="section-label">05 / THE NEXT CHAPTER</div><h2>Good things<br/>start with<br/><em>“hello.”</em><span className="contact-star">✳</span></h2><p>A project, a question, or a wonderfully weird idea.<br/>Let’s see where it goes.</p><div className="email-actions"><a href={`mailto:${profile.email}`}>{profile.email}</a><button onClick={copyEmail} aria-label="Copy email address">{copied ? <Check size={20}/> : <Copy size={20}/>}</button></div><span className="copy-status" role="status">{copied ? 'Copied. Talk soon!' : copyFailed ? 'Select the email address to copy it.' : 'SEND A NOTE ↗ OR COPY THE ADDRESS'}</span><div className="socials"><a href={profile.github} target="_blank" rel="noreferrer"><Github size={17}/> GitHub <ArrowUpRight size={15}/></a><a href={profile.linkedin} target="_blank" rel="noreferrer"><Linkedin size={17}/> LinkedIn <ArrowUpRight size={15}/></a></div></div>
+        <footer><span>© {new Date().getFullYear()} MOHIT SRIVASTAVA</span><a href="#home">BACK TO THE TOP <ArrowUpRight size={14}/></a></footer>
+      </section>
     </main>
-    <footer className="site-footer section-shell"><a className="footer-brand" href="#home">m.</a><span>© {new Date().getFullYear()} Mohit Srivastava</span><span className="footer-note">Made with intention. And a little play.</span><a className="back-top" href="#home">BACK TO TOP <ArrowRight size={15}/></a></footer>
-    <aside className="experience-controls" aria-label="Experience settings"><button onClick={() => { soundRef.current = !soundOn; setSoundOn(!soundOn); if (!soundOn) sound(620) }} aria-label={soundOn ? 'Mute sound' : 'Enable sound'} aria-pressed={soundOn} title={soundOn ? 'Sound on' : 'Sound off'}>{soundOn ? <Volume2 size={16}/> : <VolumeX size={16}/>}<span>SOUND {soundOn ? 'ON' : 'OFF'}</span></button><span className="control-divider"/><button onClick={() => setReduced(!reduced)} aria-pressed={reduced} aria-label={reduced ? 'Enable animations' : 'Reduce motion'} title={reduced ? 'Enable animations' : 'Reduce motion'}>{reduced ? <Play size={15}/> : <Pause size={15}/>}</button></aside>
+
+    <nav className="chapter-nav" aria-label="Chapters">{chapters.map((id,i) => <a key={id} href={`#${id}`} aria-label={labels[i]} aria-current={chapter === id ? 'location' : undefined}><i/><span>{labels[i]}</span></a>)}</nav>
+    <div className="experience-tools">
+      {settings && <div className="settings-popover"><span className="small-label">MAKE YOURSELF AT HOME</span><button onClick={() => setReduced(!reduced)} aria-pressed={reduced}>{reduced ? <Play size={17}/> : <Pause size={17}/>} {reduced ? 'Enable motion' : 'Reduce motion'}</button><button onClick={() => setInk(!ink)} aria-pressed={ink}><Sparkles size={17}/>{ink ? 'Switch to full color' : 'Switch to ink'}</button><button onClick={() => { clearTimeout(resetTimer.current); cue(chapterCues[chapter]); setShirt('#f1e8db'); setInk(true) }}><RotateCcw size={17}/>Reset character</button></div>}
+      {'speechSynthesis' in window && <button className="round-tool" onClick={toggleVoice} aria-label={voice ? 'Mute narration' : 'Enable narration'} aria-pressed={voice} title="Optional voice narration">{voice ? <Volume2 size={19}/> : <VolumeX size={19}/>}</button>}
+      <button className="round-tool" onClick={() => setSettings(!settings)} aria-expanded={settings} aria-label="Experience settings">{settings ? <X size={19}/> : <SlidersHorizontal size={19}/>}</button>
+    </div>
+
+    {details && <dialog ref={dialog} className="case-dialog" aria-labelledby="case-title" onCancel={() => setDetails(false)} onClick={e => { if (e.target === e.currentTarget) setDetails(false) }}><div className="case-body"><button className="case-close round-tool" aria-label="Close project story" onClick={() => setDetails(false)}><X/></button><span className="section-label">PROJECT 01 / QUBITLAB</span><h2 id="case-title">Make the abstract<br/><em>click.</em></h2><p className="case-lead">{project.description}</p><div className="case-columns"><div><h3>The idea</h3><p>Quantum states are hard to picture in equations alone. QubitLab gives learners a space to build circuits, inspect their effects, and ask questions as they go.</p></div><div><h3>The experience</h3><p>A visual circuit builder, 3D state exploration, and an AI learning companion connect experimentation with explanation.</p></div><div><h3>The stack</h3><p>A Next.js and TypeScript interface, Three.js for spatial visualization, and FastAPI with Qiskit for the quantum side.</p></div></div><div className="case-links"><a className="pill" href={project.live} target="_blank" rel="noreferrer">Open QubitLab <ArrowUpRight size={18}/></a><a className="line-link" href={project.repository} target="_blank" rel="noreferrer">Explore the source <ArrowRight size={18}/></a></div></div></dialog>}
   </div>
 }
