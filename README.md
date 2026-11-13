@@ -30,3 +30,7 @@ The Sites identity and existing owner-only audience are preserved in `.openai/ho
 ## Reference investigation
 
 Rea 6.9.0 was installed as requested and used to inspect three public shipped scripts from sebg.ch. The investigation established procedural geometry, a print-like shader, hierarchical animation, scroll staging and interaction patterns. This is an original reconstruction of those ideas, not a copy of the site's source, assets, biography or projects. Static analysis was partial and does not establish complete feature parity. See `REFERENCE-NOTES.md` for the bounded evidence.
+
+## Full-body and chapter update
+
+The portrait now has articulated legs and shoes, a single tapered nose, and a book-edge arm solver. Eight scroll chapters include interactive Toolkit and Process sections. Chapter-specific staging alternates left/right; dense project sections use a circular close-up with an expand control. Mobile uses compact circles outside the dedicated playground stage.

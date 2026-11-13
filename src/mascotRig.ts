@@ -6,7 +6,7 @@ export function createMascotRig() {
   const body = new T.Group(); root.add(body)
   const head = new T.Group(); head.position.y = 2.03; body.add(head)
   const paint=(color:string,roughness=.84,metalness=0)=>new T.MeshStandardMaterial({color,roughness,metalness})
-  const skin=paint('#d8ac89'), warm=paint('#ad7158')
+  const skin=paint('#d8ac89')
   const lock=paint('#322431'), streak=paint('#574254'), crease=paint('#d7cbd1'), tie=paint('#241a38')
   const frame=paint('#be985f',.34,.27), rim=paint('#30242d'), citron=paint('#f7ca67')
   const glint=new T.MeshBasicMaterial({color:'#fff1cc'})
@@ -137,9 +137,9 @@ export function createMascotRig() {
   }
   stroke(sculpt, frame, [[-.204,.999,.814],[0,1.012,.846],[.204,.999,.814]], .015)
   stroke(sculpt, frame, [[-.102,.845,.795],[0,.899,.845],[.102,.845,.795]], .017)
-  ball(sculpt, skin, 0, .68, .745, .137, .221, .137)
-  ball(sculpt, skin, 0, .553, .832, .173, .121, .142)
-  for (const side of [-1, 1]) ball(sculpt, warm, side * .109, .512, .853, .062, .047, .062)
+  // One softly tapered nose avoids the separate bulb and dark nostril blobs.
+  const nose=ball(sculpt,skin,0,.635,.755,.105,.165,.115)
+  nose.rotation.x=-.12
   // A deformable mouth strip changes continuously between smile, speech, surprise and sleep.
   const mouthGeometry=new T.BufferGeometry(), teethGeometry=new T.BufferGeometry()
   const count=25, mouthVertices=new Float32Array(count*2*3), teethVertices=new Float32Array(count*2*3), mouthIndices:number[]=[]
@@ -177,7 +177,21 @@ export function createMascotRig() {
       return finger
     })
     const thumb=ellipsoid(wrist,skin,[side*-.156,-.10,.04],[.065,.13,.06],20);thumb.rotation.z=side*.55
-    return {shoulder,elbow,wrist,fingers,side}
+    return {shoulder,elbow,wrist,fingers,thumb,side}
+  })
+
+  const trousers=paint('#343044'),sole=paint('#ece7db'),shoe=paint('#252331')
+  box(body,trousers,1.3,.40,.71,0,.25,-.03,.13)
+  const legs=[-1,1].map(side=>{
+    const hip=new T.Group();hip.position.set(side*.34,.22,-.03);body.add(hip)
+    box(hip,trousers,.55,.72,.59,0,-.33,0,.16)
+    const knee=new T.Group();knee.position.y=-.68;hip.add(knee)
+    ellipsoid(knee,trousers,[0,0,0],[.245,.16,.26])
+    box(knee,trousers,.49,.69,.52,0,-.27,0,.10)
+    box(knee,shoe,.59,.24,.84,0,-.63,.13,.10)
+    box(knee,sole,.61,.075,.86,0,-.75,.13,.03)
+    for(let i=0;i<3;i++)box(knee,sole,.25,.018,.027,0,-.53-i*.045,.47,.007)
+    return {hip,knee,side}
   })
 
   const book=new T.Group();book.position.set(0,1.24,1.01);book.rotation.x=.17;body.add(book)
@@ -203,5 +217,5 @@ export function createMascotRig() {
   ellipsoid(phone,white,[.06,.14,.033],[.015,.015,.005],16)
   book.visible=lens.visible=phone.visible=false
   root.traverse((object)=>{if(object instanceof T.Mesh){object.geometry.computeBoundingSphere()}})
-  return {root,body,head,eyes,arms,book,turningPage,lens,phone,shirt,expression}
+  return {root,body,head,eyes,arms,legs,book,turningPage,lens,phone,shirt,expression}
 }

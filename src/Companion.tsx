@@ -150,6 +150,11 @@ export default function Companion(props: Props) {
       const mouthWidth=.56-w.sleep*.36-w.drowsy*.14-w.panic*.30-hiccup*.25-w.sulk*.17+w.celebrate*.07-waking*.26
       const mouthOpen=.115+gaze.speech-w.read*.068-w.sleep*.055+w.sleep*Math.sin(clock*1.7)*.025+w.panic*.14+hiccup*.12-w.sulk*.091+w.celebrate*.06+waking*.15
       rig.expression(mouthWidth,Math.max(.018,mouthOpen),1-w.sleep-w.panic-w.sulk*1.9-waking)
+      rig.legs.forEach(({hip,knee,side})=>{
+        hip.rotation.x=w.dance*Math.sin(clock*6+side)*.22+flight*.22
+        hip.rotation.z=side*(w.celebrate*.10+w.fly*.12)
+        knee.rotation.x=Math.max(0,-Math.sin(clock*6+side))*.28*w.dance+flight*.35
+      })
       rig.arms.forEach((arm,index)=>{
         const side=arm.side
         let sx=0,sz=side*.14,ex=-.15,wz=0
@@ -176,8 +181,24 @@ export default function Companion(props: Props) {
           pose(w.punch,-.85,.4,-1.6)
         }
         const reach=w.read*.30+peek*.43+(index===1?w.think*.47+w.sneeze*.37:0)
-        arm.shoulder.rotation.set(sx,-side*reach,sz);arm.elbow.rotation.x=ex;arm.wrist.rotation.z=wz
+        arm.shoulder.rotation.set(sx,-side*reach,sz);arm.elbow.rotation.x=ex;arm.wrist.rotation.set(0,0,wz)
         arm.fingers.forEach((finger,i)=>{finger.rotation.x=-(w.read*.86+w.punch*1.3+w.sulk*.75+w.selfie*.98+w.explore*(index===1?.85:0)+w.think*(index===1&&i!==1?.92:0))})
+        // Solve both arms against the book's edges, so palms follow the prop.
+        if(w.read>.001){
+          const target=new T.Vector3(side*.49,1.32,1.02)
+          const delta=target.sub(arm.shoulder.position),distance=T.MathUtils.clamp(delta.length(),.1,1.19)
+          const elbow=-Math.acos(T.MathUtils.clamp((distance*distance-.65*.65-.55*.55)/(2*.65*.55),-1,1))
+          const radial=Math.hypot(delta.x,delta.z)
+          const heading=Math.atan2(delta.x,delta.z)
+          const angle=Math.atan2(-radial,-delta.y)-Math.atan2(.55*Math.sin(elbow),.65+.55*Math.cos(elbow))
+          arm.shoulder.rotation.x=T.MathUtils.lerp(sx,angle,w.read)
+          arm.shoulder.rotation.y=T.MathUtils.lerp(-side*reach,heading,w.read)
+          arm.shoulder.rotation.z=T.MathUtils.lerp(sz,0,w.read)
+          arm.elbow.rotation.x=T.MathUtils.lerp(ex,elbow,w.read)
+          arm.wrist.rotation.x=2.2*w.read
+          arm.wrist.rotation.y=side*.65*w.read
+          arm.thumb.rotation.x=-.55*w.read
+        }
       })
       rig.book.visible=w.read>.03;rig.book.scale.setScalar(Math.max(.001,w.read));rig.book.rotation.z=Math.sin(clock*1.4)*.015*w.read
       const pageTurn=T.MathUtils.smoothstep(Math.cos(clock*1.05),.75,1)
@@ -186,9 +207,9 @@ export default function Companion(props: Props) {
       rig.lens.visible=w.explore>.08;rig.lens.scale.setScalar(Math.max(.001,w.explore))
       rig.phone.visible=w.selfie>.08;rig.phone.scale.setScalar(Math.max(.001,w.selfie))
       rig.shirt.color.copy(color.set(shirtColor))
-      const aspect=width/height,viewHeight=Math.max(T.MathUtils.lerp(3.95,3.6,motion.close),T.MathUtils.lerp(3.15,2.85,motion.close)/aspect)
+      const aspect=width/height,viewHeight=Math.max(T.MathUtils.lerp(6.0,3.2,motion.close),T.MathUtils.lerp(3.3,2.7,motion.close)/aspect)
       camera.left=-viewHeight*aspect/2;camera.right=viewHeight*aspect/2;camera.top=viewHeight/2;camera.bottom=-viewHeight/2
-      camera.position.set(0,T.MathUtils.lerp(2.3,2.48,motion.close),10);camera.lookAt(0,camera.position.y,0);camera.updateProjectionMatrix()
+      camera.position.set(0,T.MathUtils.lerp(1.43,2.78,motion.close),10);camera.lookAt(0,camera.position.y,0);camera.updateProjectionMatrix()
       postMaterial.uniforms.inkMode.value=ink?1:0;postMaterial.uniforms.reveal.value=motion.reveal
       renderer.setRenderTarget(target);renderer.clear();renderer.render(scene,camera)
       renderer.setRenderTarget(null);renderer.clear();renderer.render(postScene,postCamera)
@@ -234,3 +255,4 @@ export default function Companion(props: Props) {
     {fallback&&<div className="avatar-fallback"><img src="/avatar-poster.svg" alt="Cartoon portfolio guide"/></div>}
   </div>
 }
+

@@ -10,10 +10,24 @@ import { profile, projects } from './content'
 
 const Companion = lazy(() => import('./Companion'))
 gsap.registerPlugin(ScrollTrigger)
-const chapters = ['home', 'about', 'work', 'play', 'collection', 'contact']
-const labels = ['Hello', 'About', 'QubitLab', 'Play', 'Work', 'Contact']
+const toolkit = [
+ {name:'React + TypeScript',area:'INTERFACES',line:'Components, clear data flow, and interfaces that respond to your actions. QubitLab brings these together in a Next.js application.'},
+ {name:'Three.js',area:'SPATIAL EXPLORATION',line:'Making ideas visible in three dimensions. Explore quantum states in QubitLab, or play with my avatar here.'},
+ {name:'Python + FastAPI',area:'BEHIND THE INTERFACE',line:'Connecting an interactive frontend to the computation behind it. This is the Python side of QubitLab.'},
+ {name:'Qiskit',area:'QUANTUM EXPERIMENTS',line:'A way to work with quantum circuits. In QubitLab, the learner can experiment and inspect what a gate changes.'},
+]
+const processSteps = [
+ {title:'Ask',copy:'What is hard to understand? For QubitLab, the starting point is the gap between a quantum equation and an intuition you can actually use.'},
+ {title:'Build',copy:'Make the smallest useful experiment. Let someone apply a gate and see the state respond.'},
+ {title:'Explain',copy:'Connect the interaction to an explanation. A visual result becomes more useful when you can understand why it changed.'},
+ {title:'Refine',copy:'Try it, notice what feels unclear, and improve the next version. The details matter: feedback, timing, and room to explore.'},
+]
+const chapters = ['home', 'about', 'toolkit', 'work', 'process', 'play', 'collection', 'contact']
+const labels = ['Hello', 'About', 'Toolkit', 'QubitLab', 'Process', 'Play', 'Work', 'Contact']
 const chapterCues: Record<string, Cue> = {
   home: { pose: 'idle', line: 'Hey, I’m Mohit. Come explore a few things I’ve made.' },
+  toolkit: { pose: 'explore', line: 'Pick a tool. I’ll show you where it fits in my work.' },
+  process: { pose: 'think', line: 'From the first question to a working experience. Explore each step.' },
   about: { pose: 'read', line: 'Always learning. Usually with too many tabs open.' },
   work: { pose: 'explain', line: 'Meet QubitLab. Big quantum ideas, small experiments. Try a gate.' },
   play: { pose: 'explore', line: 'A tiny break from the serious stuff. What should I do?' },
@@ -51,6 +65,11 @@ export default function App() {
   const [reduced, setReduced] = useState(() => matchMedia('(prefers-reduced-motion: reduce)').matches)
   const [ink, setInk] = useState(true)
   const [shirt, setShirt] = useState('#f1e8db')
+  const [tool, setTool] = useState(0)
+  const [step, setStep] = useState(0)
+  const [expanded, setExpanded] = useState(false)
+  const docked = !expanded && (compact || ['work','collection'].includes(chapter))
+  const onLeft = ['about','process','play','collection'].includes(chapter)
   const [settings, setSettings] = useState(false)
   const [copied, setCopied] = useState(false)
   const [copyFailed, setCopyFailed] = useState(false)
@@ -85,6 +104,7 @@ export default function App() {
   }, [wake])
 
   useEffect(() => {
+    setExpanded(false)
     cue(chapterCues[chapter])
     clearTimeout(resetTimer.current)
   }, [chapter, cue])
@@ -92,16 +112,11 @@ export default function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('reduce-motion', reduced)
     const context = gsap.context(() => {
-      const mobile = compact
       if (!reduced) {
         gsap.from('.hero-title > span', { y: 90, opacity: 0, stagger: .11, duration: 1, ease: 'power3.out', clearProps: 'all' })
         gsap.utils.toArray<HTMLElement>('.about-word').forEach((word, i) => {
           gsap.fromTo(word, { opacity: .23 }, { opacity: 1, scrollTrigger: { trigger: '#about', start: `top ${75 - i * 1.1}%`, end: `top ${63 - i * 1.1}%`, scrub: true } })
         })
-        if (!mobile) {
-          gsap.fromTo(stage.current, { x: 0 }, { x: '-60vw', ease: 'none', scrollTrigger: { trigger: '#about', start: 'top bottom', end: 'top 25%', scrub: 1 } })
-          gsap.to(stage.current, { x: 0, ease: 'none', immediateRender: false, scrollTrigger: { trigger: '#contact', start: 'top bottom', end: 'top 25%', scrub: 1 } })
-        }
         gsap.utils.toArray<HTMLElement>('.reveal').forEach(el => gsap.from(el, { y: 34, opacity: 0, duration: .7, clearProps: 'all', scrollTrigger: { trigger: el, start: 'top 94%', once: true } }))
       }
       for (const id of chapters) ScrollTrigger.create({ trigger: `#${id}`, start: 'top 48%', end: 'bottom 48%', onToggle: s => { if (s.isActive) setChapter(id) } })
@@ -177,13 +192,14 @@ export default function App() {
       <a className="pill contact-pill" href="#contact">Have an idea? <ArrowUpRight size={18}/></a>
     </header>
 
-    <div ref={stage} className={`character-stage ${reduced ? 'static-stage' : ''}`} data-chapter={chapter}>
+    <div ref={stage} className={`character-stage adaptive-stage ${docked ? 'docked' : 'full-stage'} ${onLeft ? 'stage-left' : 'stage-right'}`} data-chapter={chapter}>
       <div className="speech" data-activity={activity}><span className="speech-label">MOHIT.EXE</span><p aria-live="polite">{displayLine}</p><span className="speech-corner"/></div>
       <div className="character-viewport" data-pose={gesture.pose} data-activity={activity}>
         <Suspense fallback={<div className="avatar-fallback"><img src="/avatar-poster.svg" alt="Loading Mohit’s 3D avatar"/></div>}>
-          {!(compact && chapter === 'play') && <Companion gesture={gesture} talking={talking} reduced={reduced} ink={ink} shirtColor={shirt} closeup={chapter === 'home' || chapter === 'contact'} activity={activity} onWake={wake} onTap={() => trick(tricks[0])}/>}
+          {!(compact && chapter === 'play') && <Companion gesture={gesture} talking={talking} reduced={reduced} ink={ink} shirtColor={shirt} closeup={docked} activity={activity} onWake={wake} onTap={() => trick(tricks[0])}/>}
         </Suspense>
       </div>
+      {(docked || expanded) && <button className="avatar-size-toggle" onClick={() => setExpanded(!expanded)} aria-label={expanded ? 'Minimize character' : 'Expand character'}>{expanded ? '↙' : '↗'}</button>}
       <span className="character-hint">DRAG TO PICK ME UP <span>↔</span> HOVER TO WAKE ME</span>
     </div>
 
@@ -191,7 +207,7 @@ export default function App() {
       <section className="scene hero-scene" id="home">
         <div className="hero-topline"><span className="tiny-status"/> AN EXPLORABLE PORTFOLIO <span>VOL. 01 / 2026</span></div>
         <h1 className="hero-title"><span>Ideas into</span><span>interfaces.</span><span className="outline-word">And a little</span><span className="hero-play">play<span className="asterisk">✳</span></span></h1>
-        <div className="hero-bottom"><a href="#about" className="scroll-invite"><span className="round-arrow"><ArrowDown size={21}/></span><span>Scroll to meet the human<br/><b>behind the code.</b></span></a><span className="hero-index">01 — 06</span></div>
+        <div className="hero-bottom"><a href="#about" className="scroll-invite"><span className="round-arrow"><ArrowDown size={21}/></span><span>Scroll to meet the human<br/><b>behind the code.</b></span></a><span className="hero-index">01 — 08</span></div>
       </section>
 
       <section className="scene about-scene" id="about">
@@ -203,9 +219,11 @@ export default function App() {
         </div>
       </section>
 
+      <section className="scene toolkit-scene" id="toolkit"><div className="content-left"><div className="section-label">02 / THE TOOLKIT</div><h2 className="display-heading">Different tools.<br/><span>One curious mind.</span></h2><p className="section-description">Explore the technologies behind the things I build.</p><div className="skill-tabs" role="group" aria-label="Explore technologies">{toolkit.map((item,i)=><button key={item.name} aria-pressed={tool===i} onClick={()=>{setTool(i);cue({pose:'explore',line:item.line})}}>{item.name}<ArrowUpRight size={17}/></button>)}</div><article className="skill-detail" aria-live="polite"><span className="small-label">{toolkit[tool].area}</span><h3>{toolkit[tool].name}</h3><p>{toolkit[tool].line}</p><a className="line-link" href="#work">See it in QubitLab <ArrowRight size={18}/></a></article></div></section>
+
       <section className="scene work-scene" id="work">
-        <div className="content-right">
-          <div className="section-label">02 / AN IDEA MADE REAL</div>
+        <div className="wide-content">
+          <div className="section-label">03 / AN IDEA MADE REAL</div>
           <div className="work-heading"><div><span className="small-label">FEATURED PROJECT · 01</span><h2>QubitLab<span>↗</span></h2></div><button className="pill" onClick={() => setDetails(true)}>The story <ArrowUpRight size={18}/></button></div>
           <p className="work-intro">Quantum computing.<br/><span>Out of the textbook. Into your hands.</span></p>
           <div className="browser-frame reveal"><div className="browser-chrome"><span><i/><i/><i/></span><span>QubitLab / interactive preview</span><span>↗</span></div><ProjectTour onCue={cue}/></div>
@@ -214,9 +232,11 @@ export default function App() {
         </div>
       </section>
 
+      <section className="scene process-scene" id="process"><div className="content-right"><div className="section-label">04 / HOW I THINK</div><h2 className="display-heading">A question.<br/><span>Then an experiment.</span></h2><div className="process-tabs" role="group" aria-label="Explore the process">{processSteps.map((item,i)=><button key={item.title} aria-pressed={step===i} onClick={()=>{setStep(i);cue({pose:i===2?'explain':'think',line:item.copy})}}><span>0{i+1}</span>{item.title}<ArrowUpRight size={18}/></button>)}</div><div className="process-detail" aria-live="polite"><span className="process-number">0{step+1}</span><p>{processSteps[step].copy}</p></div><a href="#play" className="line-link">Try a little experiment <ArrowRight size={18}/></a></div></section>
+
       <section className="scene play-scene" id="play">
         <div className="content-right">
-          <div className="section-label">03 / A SMALL DETOUR</div>
+          <div className="section-label">05 / A SMALL DETOUR</div>
           <h2 className="display-heading">Code is serious.<br/><span>I’m not always.</span></h2>
           <p className="section-description">A few things my digital self can do.<br/>Pick a reaction, or leave me idle and watch me drift off.</p>
           <div className="play-controls">
@@ -227,8 +247,8 @@ export default function App() {
       </section>
 
       <section className="scene collection-scene" id="collection">
-        <div className="content-right">
-          <div className="section-label">04 / THE WORKBENCH</div>
+        <div className="wide-content">
+          <div className="section-label">06 / THE WORKBENCH</div>
           <div className="collection-title"><h2>Built. Building.<br/><em>To be continued.</em></h2><span>01 PROJECT<br/>02 OPEN SLOTS</span></div>
           <button className="project-row" onClick={() => setDetails(true)}><span>01</span><strong>QubitLab</strong><span>QUANTUM LEARNING</span><ArrowUpRight/></button>
           <div className="project-row future-row"><span>02</span><strong>The next experiment</strong><span>SPACE RESERVED</span><span>+</span></div>
@@ -238,7 +258,7 @@ export default function App() {
       </section>
 
       <section className="scene contact-scene" id="contact">
-        <div className="contact-content"><div className="section-label">05 / THE NEXT CHAPTER</div><h2>Good things<br/>start with<br/><em>“hello.”</em><span className="contact-star">✳</span></h2><p>A project, a question, or a wonderfully weird idea.<br/>Let’s see where it goes.</p><div className="email-actions"><a href={`mailto:${profile.email}`}>{profile.email}</a><button onClick={copyEmail} aria-label="Copy email address">{copied ? <Check size={20}/> : <Copy size={20}/>}</button></div><span className="copy-status" role="status">{copied ? 'Copied. Talk soon!' : copyFailed ? 'Select the email address to copy it.' : 'SEND A NOTE ↗ OR COPY THE ADDRESS'}</span><div className="socials"><a href={profile.github} target="_blank" rel="noreferrer"><Github size={17}/> GitHub <ArrowUpRight size={15}/></a><a href={profile.linkedin} target="_blank" rel="noreferrer"><Linkedin size={17}/> LinkedIn <ArrowUpRight size={15}/></a></div></div>
+        <div className="contact-content"><div className="section-label">07 / THE NEXT CHAPTER</div><h2>Good things<br/>start with<br/><em>“hello.”</em><span className="contact-star">✳</span></h2><p>A project, a question, or a wonderfully weird idea.<br/>Let’s see where it goes.</p><div className="email-actions"><a href={`mailto:${profile.email}`}>{profile.email}</a><button onClick={copyEmail} aria-label="Copy email address">{copied ? <Check size={20}/> : <Copy size={20}/>}</button></div><span className="copy-status" role="status">{copied ? 'Copied. Talk soon!' : copyFailed ? 'Select the email address to copy it.' : 'SEND A NOTE ↗ OR COPY THE ADDRESS'}</span><div className="socials"><a href={profile.github} target="_blank" rel="noreferrer"><Github size={17}/> GitHub <ArrowUpRight size={15}/></a><a href={profile.linkedin} target="_blank" rel="noreferrer"><Linkedin size={17}/> LinkedIn <ArrowUpRight size={15}/></a></div></div>
         <footer><span>© {new Date().getFullYear()} MOHIT SRIVASTAVA</span><a href="#home">BACK TO THE TOP <ArrowUpRight size={14}/></a></footer>
       </section>
     </main>
