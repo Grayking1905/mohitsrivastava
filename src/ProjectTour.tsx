@@ -3,14 +3,14 @@ import { ArrowLeft, ArrowRight, Atom, BookOpen, Braces, Sparkles } from 'lucide-
 import type { Cue } from './characterTypes'
 
 const gates = {
-  H: { label: 'Hadamard', caption: 'Superposition', measurement: '50% |0⟩ · 50% |1⟩', explanation: 'The Hadamard gate puts a qubit starting in zero into an equal superposition. Measure it and either result is equally likely.' },
-  X: { label: 'Pauli X', caption: 'Bit flip', measurement: '100% |1⟩', explanation: 'The X gate flips zero to one. On the sphere, the state moves from the north pole to the south pole.' },
-  Z: { label: 'Pauli Z', caption: 'Phase flip', measurement: '100% |0⟩', explanation: 'The Z gate changes the phase of the one component. This qubit starts in zero, so its state and measurement stay the same.' },
+  H: { label: 'Hadamard', caption: 'Superposition', measurement: '50% |0⟩ · 50% |1⟩', explanation: 'The Hadamard gate gives a qubit starting at zero an equal chance of being measured as zero or one.' },
+  X: { label: 'Pauli X', caption: 'Bit flip', measurement: '100% |1⟩', explanation: 'The X gate flips zero to one. The arrow moves from the north pole of the sphere to the south pole.' },
+  Z: { label: 'Pauli Z', caption: 'Phase flip', measurement: '100% |0⟩', explanation: 'The Z gate changes the phase of the one component. This qubit starts at zero, so its state stays the same.' },
 }
 const steps = [
-  { name: 'Build a circuit', icon: Braces, text: 'Choose H, X, or Z to apply a gate to a qubit that starts in |0⟩. Each choice starts a fresh circuit.', voice: 'This is the circuit builder. Pick a gate below to apply it to a fresh qubit starting in zero.' },
-  { name: 'See the state', icon: Atom, text: 'The arrow on the Bloch sphere shows the state after the gate. The readout gives the probability of measuring zero or one.', voice: 'The arrow on the Bloch sphere shows the result of your gate. Check the probabilities underneath to see what a measurement would return.' },
-  { name: 'Learn by asking', icon: Sparkles, text: 'In the full app, an AI tutor helps you reason through circuits and quantum concepts while you experiment.', voice: 'When the math gets tricky, QubitLab’s tutor can help you reason through a circuit. Try the full app to explore that part.' },
+  { name: 'Build a circuit', icon: Braces, text: 'Choose H, X, or Z to apply a gate to a qubit that starts in |0⟩. Each choice starts a fresh circuit.', voice: 'Here’s the circuit builder. Pick a gate to apply it to a qubit that starts at zero.' },
+  { name: 'See the state', icon: Atom, text: 'The arrow on the Bloch sphere shows the state after the gate. The readout gives the probability of measuring zero or one.', voice: 'The arrow on the Bloch sphere shows the state after the gate. The numbers below tell you how likely zero and one are.' },
+  { name: 'Learn by asking', icon: Sparkles, text: 'In the full app, an AI tutor helps you reason through circuits and quantum concepts while you experiment.', voice: 'If the math gets tricky, QubitLab’s tutor can help you work through the circuit. You can try it in the full app.' },
 ]
 export default function ProjectTour({ onCue }: { onCue: (cue: Cue) => void }) {
   const [step, setStep] = useState(0)

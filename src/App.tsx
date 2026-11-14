@@ -5,52 +5,53 @@ import { ArrowDown, ArrowUpRight, ArrowRight, Check, Copy, Github, Linkedin, Vol
 import type { Cue, Gesture, Pose } from './characterTypes'
 import ProjectTour from './ProjectTour'
 import useMascotActivity from './useMascotActivity'
+import useNarration from './useNarration'
 import { profile, projects } from './content'
 
 const Companion = lazy(() => import('./Companion'))
 gsap.registerPlugin(ScrollTrigger)
 const toolkit = [
- {name:'React + TypeScript',area:'INTERFACES',line:'Components, clear data flow, and interfaces that respond to your actions. QubitLab brings these together in a Next.js application.'},
- {name:'Three.js',area:'SPATIAL EXPLORATION',line:'Making ideas visible in three dimensions. Explore quantum states in QubitLab, or play with my avatar here.'},
- {name:'Python + FastAPI',area:'BEHIND THE INTERFACE',line:'Connecting an interactive frontend to the computation behind it. This is the Python side of QubitLab.'},
- {name:'Qiskit',area:'QUANTUM EXPERIMENTS',line:'A way to work with quantum circuits. In QubitLab, the learner can experiment and inspect what a gate changes.'},
+ {name:'React + TypeScript',area:'INTERFACES',line:'I use React and TypeScript to build interfaces that respond to what you do. In QubitLab, they work together in a Next.js app.'},
+ {name:'Three.js',area:'SPATIAL EXPLORATION',line:'I use Three.js to make ideas easier to see. You can explore a quantum state in QubitLab, or try moving this avatar.'},
+ {name:'Python + FastAPI',area:'BEHIND THE INTERFACE',line:'Python and FastAPI connect the interface to the calculations behind it. That’s how QubitLab runs its circuits.'},
+ {name:'Qiskit',area:'QUANTUM EXPERIMENTS',line:'Qiskit is a toolkit for working with quantum circuits. In QubitLab, you can try a gate and see what it changes.'},
 ]
 const processSteps = [
- {title:'Ask',copy:'What is hard to understand? For QubitLab, the starting point is the gap between a quantum equation and an intuition you can actually use.'},
- {title:'Build',copy:'Make the smallest useful experiment. Let someone apply a gate and see the state respond.'},
- {title:'Explain',copy:'Connect the interaction to an explanation. A visual result becomes more useful when you can understand why it changed.'},
- {title:'Refine',copy:'Try it, notice what feels unclear, and improve the next version. The details matter: feedback, timing, and room to explore.'},
+ {title:'Ask',copy:'I start by asking what’s hard to understand. With QubitLab, I wanted quantum equations to feel a little more intuitive.'},
+ {title:'Build',copy:'Start with a small experiment. Let someone apply a gate and see the state change.'},
+ {title:'Explain',copy:'Next, explain what just happened. Seeing a result is more useful when you know why it changed.'},
+ {title:'Refine',copy:'Try it, notice what feels unclear, and improve it. Good feedback and a little room to explore go a long way.'},
 ]
 const chapters = ['home', 'about', 'toolkit', 'work', 'process', 'play', 'collection', 'contact']
 const labels = ['Hello', 'About', 'Toolkit', 'QubitLab', 'Process', 'Play', 'Work', 'Contact']
 const chapterCues: Record<string, Cue> = {
-  home: { pose: 'idle', line: 'Hey, I’m Mohit. Come explore a few things I’ve made.' },
-  toolkit: { pose: 'explore', line: 'Pick a tool. I’ll show you where it fits in my work.' },
-  process: { pose: 'think', line: 'From the first question to a working experience. Explore each step.' },
-  about: { pose: 'read', line: 'Always learning. Usually with too many tabs open.' },
-  work: { pose: 'explain', line: 'Meet QubitLab. Big quantum ideas, small experiments. Try a gate.' },
-  play: { pose: 'explore', line: 'A tiny break from the serious stuff. What should I do?' },
-  collection: { pose: 'think', line: 'One project, and room for the next “what if?”.' },
-  contact: { pose: 'wave', line: 'Your next idea could start with a hello.' },
+  home: { pose: 'idle', line: 'Hi, I’m Mohit. Let me show you a few things I’ve built.' },
+  toolkit: { pose: 'explore', line: 'Pick a tool, and I’ll show you how I use it.' },
+  process: { pose: 'think', line: 'Here’s how I go from a question to something you can try. Pick a step.' },
+  about: { pose: 'read', line: 'I’m always learning, usually with one too many tabs open.' },
+  work: { pose: 'explain', line: 'This is QubitLab. Try a gate and see what it does to a qubit.' },
+  play: { pose: 'explore', line: 'Let’s take a quick break. Pick something for me to do.' },
+  collection: { pose: 'think', line: 'Here’s what I’ve built so far. I’ve left some room for the next idea.' },
+  contact: { pose: 'wave', line: 'If you have an idea you’d like to talk about, I’d love to hear it.' },
 }
 const tricks: { pose: Pose; label: string; line: string }[] = [
-  { pose: 'wave', label: 'Say hello', line: 'Hello, human on the other side of the screen!' },
-  { pose: 'dance', label: 'Dance', line: 'The build passed. You know what that means.' },
-  { pose: 'read', label: 'Read', line: 'Just one more chapter. And one more coffee.' },
-  { pose: 'explore', label: 'Investigate', line: 'Found something interesting in the details.' },
-  { pose: 'panic', label: 'Break prod', line: 'It worked on my machine… okay, breathe.' },
-  { pose: 'fly', label: 'Take flight', line: 'Deploying to the cloud. Literally.' },
-  { pose: 'vanish', label: 'Disappear', line: 'Gone to clear my cache. Be right back.' },
-  { pose: 'spin', label: 'Spin', line: 'A fresh perspective on the problem.' },
-  { pose: 'sneeze', label: 'Sneeze', line: 'Ah… ah… too many bugs in the air!' },
-  { pose: 'selfie', label: 'Strike a pose', line: 'New profile picture? This is my good side.' },
-  { pose: 'celebrate', label: 'Celebrate', line: 'Little experiments. Big possibilities.' },
+  { pose: 'wave', label: 'Say hello', line: 'Hey there! Nice to meet you.' },
+  { pose: 'dance', label: 'Dance', line: 'The build passed! I think that calls for a little celebration.' },
+  { pose: 'read', label: 'Read', line: 'I’ll read one more chapter. Then I might need another coffee.' },
+  { pose: 'explore', label: 'Investigate', line: 'Hang on, I think I found something.' },
+  { pose: 'panic', label: 'Break prod', line: 'It worked on my machine. Okay, let’s take a breath.' },
+  { pose: 'fly', label: 'Take flight', line: 'I’m heading to the cloud. This time, I mean it literally.' },
+  { pose: 'vanish', label: 'Disappear', line: 'I’m off to clear my cache. I’ll be right back.' },
+  { pose: 'spin', label: 'Spin', line: 'Let’s look at it from another angle.' },
+  { pose: 'sneeze', label: 'Sneeze', line: 'Excuse me! Must be all those bugs in the air.' },
+  { pose: 'selfie', label: 'Strike a pose', line: 'Time for a new profile picture? I think this is my good side.' },
+  { pose: 'celebrate', label: 'Celebrate', line: 'That worked! Now let’s see what else we can do.' },
   { pose: 'think', label: 'Think', line: 'What if we tried it a different way?' },
-  { pose: 'hiccup', label: 'Hiccup', line: 'A tiny interruption in the event loop.' },
-  { pose: 'peekaboo', label: 'Peekaboo', line: 'Still here. Just hiding from that one bug.' },
-  { pose: 'dizzy', label: 'Get dizzy', line: 'Too many tabs. Too many tabs!' },
-  { pose: 'sulk', label: 'Sulk', line: 'The test failed. I need a moment.' },
-  { pose: 'punch', label: 'Fight a bug', line: 'One bug down. Let’s keep going.' },
+  { pose: 'hiccup', label: 'Hiccup', line: 'Sorry, just a little hiccup.' },
+  { pose: 'peekaboo', label: 'Peekaboo', line: 'I’m still here. I’m just hiding from that one bug.' },
+  { pose: 'dizzy', label: 'Get dizzy', line: 'I think I’ve opened one tab too many.' },
+  { pose: 'sulk', label: 'Sulk', line: 'The test failed. Give me a moment.' },
+  { pose: 'punch', label: 'Fight a bug', line: 'That’s one bug fixed. Let’s keep going.' },
 ]
 
 export default function App() {
@@ -60,6 +61,7 @@ export default function App() {
   const [gesture, setGesture] = useState<Gesture>({ pose: 'idle', sequence: 0 })
   const [line, setLine] = useState(chapterCues.home.line)
   const [talking, setTalking] = useState(false)
+  const { play: playNarration, stop: stopNarration } = useNarration(setTalking)
   const [voice, setVoice] = useState(false)
   const [reduced, setReduced] = useState(() => matchMedia('(prefers-reduced-motion: reduce)').matches)
   const [ink, setInk] = useState(true)
@@ -88,18 +90,16 @@ export default function App() {
     clearTimeout(talkTimer.current)
     setGesture(g => ({ pose: next.pose, sequence: g.sequence + 1 }))
     setLine(next.line)
-    setTalking(true)
-    if ('speechSynthesis' in window) {
-      speechSynthesis.cancel()
-      if (voiceRef.current) {
-        const utterance = new SpeechSynthesisUtterance(next.line)
-        utterance.lang = 'en-IN'; utterance.rate = 1
-        utterance.onend = utterance.onerror = () => setTalking(false)
-        speechSynthesis.speak(utterance)
-      }
+    if (voiceRef.current && interacted) playNarration(next.line)
+    else if (interacted) {
+      setTalking(true)
+      talkTimer.current = window.setTimeout(() => setTalking(false), 4200)
     }
-    talkTimer.current = window.setTimeout(() => setTalking(false), 4200)
-  }, [wake])
+  }, [playNarration, wake])
+
+  useEffect(() => {
+    if (activity === 'asleep') { stopNarration(); setTalking(false) }
+  }, [activity, stopNarration])
 
   useEffect(() => {
     setExpanded(false)
@@ -133,7 +133,6 @@ export default function App() {
       breakpoint.removeEventListener('change', onBreakpoint)
       preference.removeEventListener('change', change)
       clearTimeout(talkTimer.current); clearTimeout(resetTimer.current); clearTimeout(copyTimer.current)
-      if ('speechSynthesis' in window) speechSynthesis.cancel()
     }
   }, [])
 
@@ -155,13 +154,13 @@ export default function App() {
     const next = !voice
     setVoice(next); voiceRef.current = next
     if (next) cue({ pose: gesture.pose, line })
-    else if ('speechSynthesis' in window) { speechSynthesis.cancel(); setTalking(false) }
+    else { stopNarration(); setTalking(false) }
   }
   async function copyEmail() {
     try {
       await navigator.clipboard.writeText(profile.email)
       setCopied(true); setCopyFailed(false)
-      cue({ pose: 'celebrate', line: 'Email copied. I’m looking forward to your idea.' })
+      cue({ pose: 'celebrate', line: 'I’ve copied my email address. I’d love to hear what you’re working on.' })
       clearTimeout(copyTimer.current); copyTimer.current = window.setTimeout(() => setCopied(false), 2600)
     } catch { setCopyFailed(true) }
   }
@@ -174,7 +173,7 @@ export default function App() {
   function takeNap() {
     clearTimeout(resetTimer.current); clearTimeout(talkTimer.current)
     setTalking(false)
-    if ('speechSynthesis' in window) speechSynthesis.cancel()
+    stopNarration()
     const next = chapterCues[chapterRef.current]
     setGesture(g => ({ pose: next.pose, sequence: g.sequence + 1 }))
     setLine(next.line)
@@ -183,7 +182,7 @@ export default function App() {
   const project = projects[0]
   const words = 'I’m a software engineer who likes making complex ideas feel simple. I build thoughtful interfaces, explore unfamiliar problems, and learn by making things you can actually use.'.split(' ')
 
-  return <div className={`experience chapter-${chapter}`} data-activity={activity}>
+  return <div className={`experience chapter-${chapter}`} data-activity={activity} data-narrating={voice && talking}>
     <a className="skip-link" href="#about">Skip introduction</a>
     <header className="masthead">
       <a className="identity" href="#home"><span className="identity-symbol">m<span>✳</span></span><span><strong>{profile.name}</strong><small>Software engineer & curious human</small></span></a>
@@ -240,7 +239,7 @@ export default function App() {
           <div className="play-controls">
           {compact && <div className="mobile-stage" data-activity={activity}><div className="mobile-speech"><span className="speech-label">MOHIT.EXE</span><p aria-live="polite">{displayLine}</p></div><div className="mobile-model"><Suspense fallback={<img src="/avatar-poster.svg" alt="Mohit’s illustrated avatar"/>}><Companion gesture={gesture} talking={talking} reduced={reduced} ink={ink} shirtColor={shirt} activity={activity} onWake={wake} onTap={() => trick(tricks[0])}/></Suspense></div></div>}
           <div className="trick-grid">{tricks.map(action => <button key={action.pose} aria-pressed={gesture.pose === action.pose && activity === 'awake'} onClick={() => trick(action)}><span>{action.label}</span><ArrowUpRight size={17}/></button>)}<button onClick={takeNap} aria-pressed={activity === 'asleep'}><span>Take a nap</span><span aria-hidden="true">zZ</span></button></div>
-          <div className="wardrobe"><span className="small-label">A CHANGE OF SHIRT?</span><div className="swatches">{[['#f1e8db','Paper'], ['#365af0','Cobalt'], ['#f17842','Tangerine'], ['#303746','Midnight']].map(([color, name]) => <button key={color} aria-label={`${name} shirt`} aria-pressed={shirt === color && !ink} style={{ background: color }} onClick={() => { clearTimeout(resetTimer.current); setShirt(color); setInk(false); cue({ pose: 'selfie', line: `${name}. A fresh look for the next build.` }) }}/>)}</div><button className="line-link" onClick={() => setInk(!ink)}>{ink ? 'Try full color' : 'Back to ink'} <Sparkles size={16}/></button></div></div>
+          <div className="wardrobe"><span className="small-label">A CHANGE OF SHIRT?</span><div className="swatches">{[['#f1e8db','Paper',"I’ll go with the light shirt this time."], ['#365af0','Cobalt',"The cobalt blue shirt looks good."], ['#f17842','Tangerine',"Let’s brighten things up with tangerine."], ['#303746','Midnight',"I’ll try the dark blue shirt."]].map(([color, name, narration]) => <button key={color} aria-label={`${name} shirt`} aria-pressed={shirt === color && !ink} style={{ background: color }} onClick={() => { clearTimeout(resetTimer.current); setShirt(color); setInk(false); cue({ pose: 'selfie', line: narration }) }}/>)}</div><button className="line-link" onClick={() => setInk(!ink)}>{ink ? 'Try full color' : 'Back to ink'} <Sparkles size={16}/></button></div></div>
         </div>
       </section>
 
@@ -264,7 +263,7 @@ export default function App() {
     <nav className="chapter-nav" aria-label="Chapters">{chapters.map((id,i) => <a key={id} href={`#${id}`} aria-label={labels[i]} aria-current={chapter === id ? 'location' : undefined}><i/><span>{labels[i]}</span></a>)}</nav>
     <div className="experience-tools">
       {settings && <div className="settings-popover"><span className="small-label">MAKE YOURSELF AT HOME</span><button onClick={() => setReduced(!reduced)} aria-pressed={reduced}>{reduced ? <Play size={17}/> : <Pause size={17}/>} {reduced ? 'Enable motion' : 'Reduce motion'}</button><button onClick={() => setInk(!ink)} aria-pressed={ink}><Sparkles size={17}/>{ink ? 'Switch to full color' : 'Switch to ink'}</button><button onClick={() => { clearTimeout(resetTimer.current); cue(chapterCues[chapter]); setShirt('#f1e8db'); setInk(true) }}><RotateCcw size={17}/>Reset character</button></div>}
-      {'speechSynthesis' in window && <button className="round-tool" onClick={toggleVoice} aria-label={voice ? 'Mute narration' : 'Enable narration'} aria-pressed={voice} title="Optional voice narration">{voice ? <Volume2 size={19}/> : <VolumeX size={19}/>}</button>}
+      <button className="round-tool" onClick={toggleVoice} aria-label={voice ? 'Mute narration' : 'Enable narration'} aria-pressed={voice} title="Optional voice narration">{voice ? <Volume2 size={19}/> : <VolumeX size={19}/>}</button>
       <button className="round-tool" onClick={() => setSettings(!settings)} aria-expanded={settings} aria-label="Experience settings">{settings ? <X size={19}/> : <SlidersHorizontal size={19}/>}</button>
     </div>
 

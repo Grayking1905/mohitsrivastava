@@ -20,5 +20,6 @@ Run the motion regression tests with `node --experimental-strip-types --test tes
 - `src/ProjectTour.tsx`: interactive QubitLab walkthrough.
 - `src/Companion.tsx`, `src/mascotRig.ts` and `src/naturalMotion.ts`: avatar rendering, model and motion.
 - `src/useMascotActivity.ts`: sleep and wake behavior.
+- `src/useNarration.ts` and `src/narration-clips.json`: playback and the caption-to-clip index. The files in `public/narration/` are rendered with ElevenLabs' Vikram voice; visitors can enable them without an API key or account. When changing a spoken line, update its caption and clip together.
 - `public/`: favicon and static avatar fallback.
 - `.openai/hosting.json`: Sites deployment configuration. Vite builds the site to `dist/`.
