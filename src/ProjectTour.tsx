@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ArrowLeft, ArrowRight, Atom, BookOpen, Braces, Sparkles } from 'lucide-react'
-import type { Cue } from './Guide'
+import type { Cue } from './characterTypes'
 
 const gates = {
   H: { label: 'Hadamard', caption: 'Superposition', measurement: '50% |0⟩ · 50% |1⟩', explanation: 'The Hadamard gate puts a qubit starting in zero into an equal superposition. Measure it and either result is equally likely.' },

@@ -4,9 +4,8 @@ import gsap from 'gsap'
 import { createMascotRig } from './mascotRig'
 import { solveArm, springStep } from './naturalMotion'
 import type { Activity } from './useMascotActivity'
+import type { Gesture } from './characterTypes'
 
-export type Pose = 'idle' | 'wave' | 'read' | 'explore' | 'explain' | 'think' | 'celebrate' | 'spin' | 'dance' | 'panic' | 'fly' | 'vanish' | 'sneeze' | 'selfie' | 'hiccup' | 'peekaboo' | 'sulk' | 'punch' | 'dizzy'
-export type Gesture = { pose: Pose; sequence: number }
 type Props = { gesture: Gesture; talking: boolean; reduced: boolean; onTap: () => void; ink?: boolean; shirtColor?: string; closeup?: boolean; activity?: Activity; onWake?: () => void }
 const emptyWeights=()=>({wave:0,read:0,explore:0,explain:0,think:0,celebrate:0,dance:0,panic:0,fly:0,vanish:0,sneeze:0,selfie:0,hiccup:0,peekaboo:0,sulk:0,punch:0,dizzy:0,sleep:0,drowsy:0,wake:0})
 

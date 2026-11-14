@@ -14,5 +14,3 @@ export const projects = [{
   description: 'Quantum computing, made tangible. A hands-on learning platform where you build circuits, explore quantum states in 3D, and learn alongside an AI tutor.',
   tags: ['Next.js', 'TypeScript', 'Three.js', 'FastAPI', 'Qiskit'],
 }]
-
-export const futureProjectSlots = ['02', '03']

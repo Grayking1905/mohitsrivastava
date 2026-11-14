@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type Activity = 'awake' | 'drowsy' | 'asleep' | 'waking'
-export const DROWSY_AFTER_MS = 12_000
-export const SLEEP_AFTER_MS = 20_000
+const DROWSY_AFTER_MS = 12_000
+const SLEEP_AFTER_MS = 20_000
 
 export default function useMascotActivity() {
   const [activity,setActivity]=useState<Activity>('awake')

@@ -2,8 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useSta
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ArrowDown, ArrowUpRight, ArrowRight, Check, Copy, Github, Linkedin, Volume2, VolumeX, Pause, Play, X, Sparkles, RotateCcw, SlidersHorizontal } from 'lucide-react'
-import type { Pose, Gesture } from './Companion'
-import type { Cue } from './Guide'
+import type { Cue, Gesture, Pose } from './characterTypes'
 import ProjectTour from './ProjectTour'
 import useMascotActivity from './useMascotActivity'
 import { profile, projects } from './content'
@@ -74,7 +73,6 @@ export default function App() {
   const [copied, setCopied] = useState(false)
   const [copyFailed, setCopyFailed] = useState(false)
   const [details, setDetails] = useState(false)
-  const stage = useRef<HTMLDivElement>(null)
   const dialog = useRef<HTMLDialogElement>(null)
   const lastFocus = useRef<HTMLElement | null>(null)
   const talkTimer = useRef<number | undefined>(undefined)
@@ -192,7 +190,7 @@ export default function App() {
       <a className="pill contact-pill" href="#contact">Have an idea? <ArrowUpRight size={18}/></a>
     </header>
 
-    <div ref={stage} className={`character-stage adaptive-stage ${docked ? 'docked' : 'full-stage'} ${onLeft ? 'stage-left' : 'stage-right'}`} data-chapter={chapter}>
+    <div className={`character-stage adaptive-stage ${docked ? 'docked' : 'full-stage'} ${onLeft ? 'stage-left' : 'stage-right'}`} data-chapter={chapter}>
       <div className="speech" data-activity={activity}><span className="speech-label">MOHIT.EXE</span><p aria-live="polite">{displayLine}</p><span className="speech-corner"/></div>
       <div className="character-viewport" data-pose={gesture.pose} data-activity={activity}>
         <Suspense fallback={<div className="avatar-fallback"><img src="/avatar-poster.svg" alt="Loading Mohit’s 3D avatar"/></div>}>
