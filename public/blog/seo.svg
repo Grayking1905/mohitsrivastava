@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" role="img" aria-labelledby="title desc">
+  <title id="title">A search engine inspecting a web page</title>
+  <desc id="desc">A cobalt magnifying glass reveals a signal inside an illustrated browser window against a peach and ivory grid.</desc>
+  <defs>
+    <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse">
+      <path d="M44 0H0v44" fill="none" stroke="#9a594b" stroke-opacity=".17"/>
+    </pattern>
+    <pattern id="dots" width="8" height="8" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#2b50ed" opacity=".42"/>
+    </pattern>
+    <clipPath id="lens"><circle cx="555" cy="320" r="119"/></clipPath>
+  </defs>
+  <rect width="960" height="620" fill="#ffbd92"/>
+  <rect width="960" height="620" fill="url(#grid)"/>
+  <circle cx="754" cy="155" r="153" fill="#ffe4c4"/>
+  <circle cx="227" cy="469" r="144" fill="none" stroke="#974f44" stroke-opacity=".4"/>
+  <circle cx="227" cy="469" r="122" fill="url(#dots)"/>
+  <g transform="rotate(-10 446 279)" stroke="#1b2130" stroke-width="3">
+    <rect x="235" y="115" width="455" height="351" rx="27" fill="#1b2130"/>
+    <rect x="220" y="100" width="455" height="351" rx="27" fill="#f4f3e9"/>
+    <path d="M220 155h455" fill="none"/>
+    <circle cx="253" cy="127" r="5" fill="#2b50ed" stroke="none"/>
+    <circle cx="272" cy="127" r="5" fill="#ffad7e" stroke="none"/>
+    <circle cx="291" cy="127" r="5" fill="#1b2130" stroke="none"/>
+    <rect x="330" y="116" width="255" height="21" rx="10" fill="#e0e4ef" stroke="none"/>
+    <rect x="253" y="187" width="353" height="42" rx="21" fill="#fffef6"/>
+    <circle cx="277" cy="207" r="7" fill="none"/>
+    <path d="m282 212 7 7m25-12h156" fill="none" stroke-linecap="round"/>
+    <path d="M256 258h143m-143 21h244m-244 14h194m-194 35h170m-170 20h231m-231 14h169m-169 34h112m-112 19h177" fill="none" stroke-linecap="round" stroke-width="5" stroke="#9499a7"/>
+    <path d="M256 258h143m-143 70h170m-170 68h112" fill="none" stroke-linecap="round" stroke-width="7" stroke="#2b50ed"/>
+  </g>
+  <path d="m631 413 126 130" fill="none" stroke="#1b2130" stroke-width="53" stroke-linecap="round"/>
+  <path d="m632 409 126 130" fill="none" stroke="#2b50ed" stroke-width="42" stroke-linecap="round"/>
+  <path d="m658 441 81 83" fill="none" stroke="#8398ff" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="559" cy="326" r="141" fill="#1b2130"/>
+  <circle cx="555" cy="320" r="138" fill="#2b50ed" stroke="#1b2130" stroke-width="3"/>
+  <circle cx="555" cy="320" r="119" fill="#e4e9ff" stroke="#1b2130" stroke-width="3"/>
+  <g clip-path="url(#lens)">
+    <path d="M438 281h237M438 318h237M438 355h237M478 202v237m38-237v237m38-237v237m38-237v237m38-237v237" fill="none" stroke="#a6b6f1"/>
+    <path d="m450 373 53-55 36 22 54-67 28 15 40-48" fill="none" stroke="#1b2130" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="m450 373 53-55 36 22 54-67 28 15 40-48" fill="none" stroke="#2b50ed" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+    <g fill="#ffb978" stroke="#1b2130" stroke-width="2">
+      <circle cx="503" cy="318" r="8"/><circle cx="593" cy="273" r="8"/>
+    </g>
+    <path d="M474 288a91 91 0 0 1 49-47" fill="none" stroke="#fffdf3" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <g stroke="#1b2130" stroke-width="2" fill="none">
+    <path d="M778 221h32m-16-16v32m-642-56h32m-16-16v32m35 270h24m-12-12v24"/>
+    <circle cx="795" cy="221" r="28"/>
+  </g>
+</svg>

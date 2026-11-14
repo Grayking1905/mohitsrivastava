@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" role="img" aria-labelledby="title desc">
+  <title id="title">An AI-assisted development workflow</title>
+  <desc id="desc">A dark code window, a peach audio panel, and a blue review tile are linked by looping lines on a warm paper field.</desc>
+  <defs>
+    <pattern id="grid" width="44" height="44" patternUnits="userSpaceOnUse">
+      <path d="M44 0H0v44" fill="none" stroke="#7b86b6" stroke-opacity=".19"/>
+    </pattern>
+    <pattern id="dots" width="7" height="7" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#2b50ed" opacity=".28"/>
+    </pattern>
+  </defs>
+  <rect width="960" height="620" fill="#f4f3e9"/>
+  <rect width="960" height="620" fill="url(#grid)"/>
+  <circle cx="684" cy="298" r="217" fill="#e1e8ff"/>
+  <circle cx="688" cy="296" r="195" fill="url(#dots)" stroke="#9aa9e6" stroke-width="1"/>
+  <path d="M181 400c-94 77 67 142 313 112 247-30 408-359 230-405-52-14-110 7-148 40" fill="none" stroke="#2b50ed" stroke-width="3"/>
+  <path d="M191 173c-91 68-118 169-53 230 83 77 268 9 333-34 119-79 246 32 382-96" fill="none" stroke="#192747" stroke-width="2" stroke-dasharray="4 8"/>
+  <g transform="rotate(-10 353 278)" stroke="#1b2130" stroke-width="3">
+    <rect x="158" y="142" width="436" height="306" rx="25" fill="#2b50ed"/>
+    <rect x="143" y="128" width="436" height="306" rx="25" fill="#1b2130"/>
+    <path d="M143 154a26 26 0 0 1 26-26h384a26 26 0 0 1 26 26v29H143z" fill="#36415e"/>
+    <circle cx="175" cy="155" r="5" fill="#ffb978" stroke="none"/>
+    <circle cx="194" cy="155" r="5" fill="#adbeff" stroke="none"/>
+    <circle cx="213" cy="155" r="5" fill="#f4f3e9" stroke="none"/>
+    <path d="m213 220-22 22 22 22m57-44 22 22-22 22m-18-59-15 73" fill="none" stroke="#ffb978" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M189 302h115m-92 22h175m-175 22h116m-139 23h197m-174 21h136" fill="none" stroke="#9fb0ec" stroke-width="5" stroke-linecap="round"/>
+    <path d="M189 302h46m-23 44h57m-80 23h86" fill="none" stroke="#f4f3e9" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <g transform="rotate(10 661 226)" stroke="#1b2130" stroke-width="3">
+    <rect x="534" y="160" width="265" height="148" rx="24" fill="#1b2130"/>
+    <rect x="525" y="151" width="265" height="148" rx="24" fill="#ffb978"/>
+    <path d="M549 225h217" stroke="#a65239" stroke-opacity=".4" stroke-width="1"/>
+    <path d="M555 220v10m13-18v26m13-33v40m13-26v12m13-29v46m13-66v86m13-57v28m13-46v64m13-54v44m13-70v96m13-71v46m13-36v26m13-31v36m13-24v12m13-20v28m13-20v12" stroke="#1b2130" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <g transform="rotate(-9 720 408)" stroke="#1b2130" stroke-width="3">
+    <rect x="613" y="344" width="219" height="144" rx="22" fill="#1b2130"/>
+    <rect x="602" y="333" width="219" height="144" rx="22" fill="#2b50ed"/>
+    <circle cx="651" cy="380" r="24" fill="#f4f3e9"/>
+    <path d="m639 379 9 9 16-18" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M694 373h86m-86 15h69m-137 40h154m-154 16h92" fill="none" stroke="#e1e8ff" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <g fill="#ffb978" stroke="#1b2130" stroke-width="2"><circle cx="125" cy="438" r="8"/><circle cx="496" cy="511" r="8"/><circle cx="853" cy="273" r="8"/></g>
+  <g stroke="#2b50ed" stroke-width="2"><path d="M834 111h33m-16-16v32M260 510h31m-15-15v30"/></g>
+</svg>

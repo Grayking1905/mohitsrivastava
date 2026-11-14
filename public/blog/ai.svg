@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" role="img" aria-labelledby="title desc">
+  <title id="title">An AI model under examination</title>
+  <desc id="desc">A blue geometric processor floats over an orbit of peach and ivory signal nodes on a dark gridded field.</desc>
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0v40" fill="none" stroke="#8598ce" stroke-opacity=".24"/>
+    </pattern>
+    <linearGradient id="plate" x2="1" y2="1">
+      <stop stop-color="#5374ff"/>
+      <stop offset="1" stop-color="#2b50ed"/>
+    </linearGradient>
+    <radialGradient id="field">
+      <stop stop-color="#223d88"/>
+      <stop offset="1" stop-color="#151d37"/>
+    </radialGradient>
+  </defs>
+  <rect width="960" height="620" fill="url(#field)"/>
+  <rect width="960" height="620" fill="url(#grid)"/>
+  <g fill="none" stroke="#869bf6">
+    <path d="M0 310H960M480 0V620" stroke-opacity=".43"/>
+    <ellipse cx="480" cy="310" rx="354" ry="181" transform="rotate(-22 480 310)" opacity=".28"/>
+    <ellipse cx="480" cy="310" rx="331" ry="117" transform="rotate(-22 480 310)" stroke-dasharray="2 9"/>
+    <ellipse cx="480" cy="310" rx="336" ry="136" transform="rotate(21 480 310)" opacity=".37"/>
+  </g>
+  <path d="M213 356c-56-108 465-301 559-208 69 69-153 231-320 291" fill="none" stroke="#ffb978" stroke-width="2.5"/>
+  <path d="m185 354 28 2-5-25M457 429l-9 13 17 1" fill="none" stroke="#ffb978" stroke-width="2.5"/>
+  <g stroke="#111a32" stroke-width="3" stroke-linejoin="round">
+    <path d="m285 367 196-116 195 116-195 116z" fill="#1b2b58"/>
+    <path d="m294 325 186 108 188-108v39L480 473 294 364z" fill="#1d35a2"/>
+    <path d="m294 325 186-109 188 109-188 108z" fill="#3956bc"/>
+    <path d="m314 272 166 96 166-96v38l-166 96-166-96z" fill="#253aa0"/>
+    <path d="m314 272 166-96 166 96-166 96z" fill="#4467f8"/>
+    <path d="m332 227 148 85 148-85v26l-148 86-148-86z" fill="#2d45b1"/>
+    <path d="m332 227 148-86 148 86-148 85z" fill="url(#plate)"/>
+    <path d="m383 227 97-56 97 56-97 56z" fill="#18285b" stroke="#a8b8ff" stroke-width="2"/>
+    <path d="m415 227 65-37 65 37-65 38z" fill="#f4f3e9" stroke="#101a38" stroke-width="2"/>
+    <path d="m449 227 31-18 31 18-31 18z" fill="#ffb978" stroke="#233066" stroke-width="2"/>
+  </g>
+  <g fill="none" stroke="#a8b8ff" stroke-width="2" opacity=".9">
+    <path d="m349 229 22 13 20-12m21-42-17 10-19-11m177 0-20 12 10 6m-19 61 19 11 26-16m-156 0-18 10 22 13m146-57 25-14 15 9"/>
+    <path d="m508 351 112-65m-266 14 105 61m54 63 125-73m-296 9 113 65" stroke-dasharray="6 7"/>
+  </g>
+  <g fill="#f4f3e9">
+    <circle cx="134" cy="295" r="11"/>
+    <circle cx="755" cy="406" r="12"/>
+    <circle cx="474" cy="115" r="5"/>
+    <circle cx="285" cy="465" r="4"/>
+  </g>
+  <g fill="#ffb978">
+    <circle cx="238" cy="262" r="9"/>
+    <circle cx="739" cy="141" r="12"/>
+    <circle cx="577" cy="444" r="7"/>
+  </g>
+  <g stroke="#ffb978" stroke-width="2" fill="none">
+    <path d="M801 504h38m-19-19v38M156 110h25m-12-12v24"/>
+    <circle cx="820" cy="504" r="31" opacity=".45"/>
+  </g>
+</svg>

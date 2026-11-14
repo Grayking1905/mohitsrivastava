@@ -186,7 +186,7 @@ export default function App() {
     <a className="skip-link" href="#about">Skip introduction</a>
     <header className="masthead">
       <a className="identity" href="#home"><span className="identity-symbol">m<span>✳</span></span><span><strong>{profile.name}</strong><small>Software engineer & curious human</small></span></a>
-      <a className="pill contact-pill" href="#contact">Have an idea? <ArrowUpRight size={18}/></a>
+      <nav className="masthead-actions" aria-label="Portfolio links"><a className="pill contact-pill" href="#contact">Have an idea? <ArrowUpRight size={18}/></a><a className="pill contact-pill blog-nav-pill" href="/blog/">Blogs <ArrowUpRight size={18}/></a></nav>
     </header>
 
     <div className={`character-stage adaptive-stage ${docked ? 'docked' : 'full-stage'} ${onLeft ? 'stage-left' : 'stage-right'}`} data-chapter={chapter}>

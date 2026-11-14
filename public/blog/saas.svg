@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 620" role="img" aria-labelledby="title desc">
+  <title id="title">Software components assembling into a product</title>
+  <desc id="desc">An ivory application panel with a bar chart connects to an input panel and a confirmation tile on a cobalt engineering grid.</desc>
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0v40" fill="none" stroke="#b2bfff" stroke-opacity=".24"/>
+    </pattern>
+    <pattern id="dots" width="8" height="8" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#f4f3e9" opacity=".42"/>
+    </pattern>
+  </defs>
+  <rect width="960" height="620" fill="#2b50ed"/>
+  <rect width="960" height="620" fill="url(#grid)"/>
+  <circle cx="492" cy="313" r="237" fill="#345bf5" stroke="#8ca2ff" stroke-opacity=".5"/>
+  <circle cx="492" cy="313" r="214" fill="none" stroke="#8ca2ff" stroke-dasharray="3 8"/>
+  <path d="M107 447h142v-84h80m279-113h68V124h144m-211 218h116v97h137" fill="none" stroke="#f4f3e9" stroke-width="2" stroke-dasharray="5 7" opacity=".85"/>
+  <path d="M22 527h215v93H22zm751-527h160v99H773z" fill="url(#dots)"/>
+  <g transform="rotate(-8 468 293)" stroke="#18213b" stroke-width="3">
+    <rect x="247" y="131" width="477" height="351" rx="26" fill="#15264d"/>
+    <rect x="233" y="115" width="477" height="351" rx="26" fill="#f4f3e9"/>
+    <path d="M233 168h477M329 168v298" fill="none"/>
+    <path d="M233 141a26 26 0 0 1 26-26h425a26 26 0 0 1 26 26v27H233z" fill="#ffb978"/>
+    <g fill="#1b2130" stroke="none"><circle cx="259" cy="142" r="5"/><circle cx="278" cy="142" r="5"/><circle cx="297" cy="142" r="5"/></g>
+    <rect x="251" y="188" width="59" height="28" rx="7" fill="#2b50ed" stroke="none"/>
+    <path d="M257 234h35m-35 28h44m-44 28h32m-32 28h37m-37 28h29" stroke="#7a849b" stroke-width="5" stroke-linecap="round"/>
+    <path d="M354 197h136m-136 15h83" stroke="#1b2130" stroke-width="7" stroke-linecap="round"/>
+    <rect x="351" y="238" width="333" height="184" rx="14" fill="#e1e8ff"/>
+    <path d="M374 269h288m-288 30h288m-288 30h288m-288 30h288m-288 30h288" fill="none" stroke="#9caedf" stroke-width="1"/>
+    <path d="M387 332h37v57h-37zm57-28h37v85h-37zm57 12h37v73h-37zm57-47h37v120h-37zm57-16h37v136h-37z" fill="#2b50ed" stroke="none"/>
+    <path d="M558 269h37v120h-37z" fill="#ffb978" stroke="none"/>
+  </g>
+  <g transform="rotate(10 171 357)" stroke="#1b2130" stroke-width="3">
+    <rect x="103" y="294" width="151" height="132" rx="19" fill="#1b2130"/>
+    <rect x="94" y="285" width="151" height="132" rx="19" fill="#ffb978"/>
+    <rect x="111" y="306" width="117" height="27" rx="8" fill="#f4f3e9"/>
+    <path d="M121 319h59m-59 32h84m-84 17h84m-84 17h51" fill="none" stroke-linecap="round" stroke-width="4"/>
+  </g>
+  <g transform="rotate(9 771 427)" stroke="#1b2130" stroke-width="3">
+    <rect x="716" y="381" width="137" height="128" rx="23" fill="#1b2130"/>
+    <rect x="707" y="372" width="137" height="128" rx="23" fill="#f4f3e9"/>
+    <circle cx="775" cy="436" r="33" fill="#ffb978"/>
+    <path d="m759 436 11 11 22-24" fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g fill="#f4f3e9"><circle cx="107" cy="447" r="6"/><circle cx="820" cy="124" r="6"/><circle cx="862" cy="439" r="6"/></g>
+  <g stroke="#ffb978" stroke-width="2" fill="none"><path d="M140 157h30m-15-15v30m640 92h30m-15-15v30"/><circle cx="155" cy="157" r="24"/></g>
+</svg>
