@@ -1,4 +1,9 @@
-export type BlogCategory = 'AI' | 'SEO' | 'SaaS' | 'Workflow'
+import { agentPost } from './blogAgentPost'
+import { androidPosts } from './blogAndroidPosts'
+import { researchPosts } from './blogResearchPosts'
+import { workflowPosts } from './blogWorkflowPosts'
+
+export type BlogCategory = 'AI' | 'SEO' | 'SaaS' | 'Workflow' | 'Android' | 'Open source'
 
 export interface BlogPost {
   slug: string
@@ -9,10 +14,14 @@ export interface BlogPost {
   date: string
   sections: { heading: string; paragraphs: string[] }[]
   sources: { label: string; href: string }[]
+  cover?: string
+  diagramTitle?: string
+  diagramType?: 'workflow' | 'comparison'
+  diagramBranches?: { title: string; description: string }[]
   diagram: { title: string; description: string }[]
 }
 
-export const posts: BlogPost[] = [
+const originalPosts: BlogPost[] = [
   {
     "slug": "read-ai-coding-benchmarks",
     "category": "AI",
@@ -197,61 +206,6 @@ export const posts: BlogPost[] = [
       }
     ]
   },
-  {
-    "slug": "codex-and-elevenlabs-in-my-workflow",
-    "category": "Workflow",
-    "title": "How I used Codex and ElevenLabs on this portfolio",
-    "excerpt": "A look at the actual portfolio workflow, from an interaction brief to narration that starts and stops with the avatar.",
-    "readingTime": "3 min read",
-    "date": "2026-11-14",
-    "sections": [
-      {
-        "heading": "Start with a behavior I can check",
-        "paragraphs": [
-          "I used Codex to iterate on this portfolio, including the avatar and its interactive scenes. The useful requests described what should happen on screen. For example, selecting a reaction should replace the current one, while switching to reduced motion should leave a readable, usable interface.",
-          "I’d write a brief for that kind of change with three parts. Describe the starting state, the visitor’s action, and the expected result. For narration, that can be as simple as opening the playground, enabling sound, and choosing a second reaction while the first clip is playing. The second line should take over, and mute should stop the audio immediately.",
-          "That example gives the implementation a concrete target. It also makes it easier to review what changed because I can reproduce the interaction instead of judging only the patch or the first screenshot."
-        ]
-      },
-      {
-        "heading": "ElevenLabs voices the avatar’s scripted lines",
-        "paragraphs": [
-          "The avatar originally used the browser’s speech engine. I wanted the voice to feel more consistent, so the portfolio now uses 44 short clips generated with ElevenLabs’ Vikram voice. The scripts are written for speech, with shorter sentences and pronounced forms of technical terms such as QubitLab and Bloch sphere.",
-          "Each clip is stored with the portfolio and paired with its caption. When narration is enabled, a new action plays the matching file. Playback events tell the avatar when to animate its mouth, and a new line or mute cancels the active clip. Visitors can read the captions with the audio off.",
-          "I’d review technical terms by listening to the exported line and checking it against the visible caption. This matters especially when the written term looks straightforward to a developer but sounds different when a voice model reads it."
-        ]
-      },
-      {
-        "heading": "Check the assembled experience",
-        "paragraphs": [
-          "An audio file on its own tells you whether a sentence is clear. The website tells you whether the sentence fits the moment. Try changing reactions twice, muting partway through a line, and revisiting the same page from a fresh tab. A voice that sounds good can still feel awkward if it arrives late or keeps speaking after the user moves on.",
-          "The same review applies to generated code. Run the project, try the interaction on a smaller screen, and read the changes near the feature. Keep the details you can verify, such as when a clip starts, what stops it, and whether the caption is still there when the audio is off."
-        ]
-      }
-    ],
-    "sources": [
-      {
-        "label": "OpenAI · Codex documentation",
-        "href": "https://developers.openai.com/codex"
-      },
-      {
-        "label": "ElevenLabs · Text to Speech documentation",
-        "href": "https://elevenlabs.io/docs/overview/capabilities/text-to-speech"
-      }
-    ],
-    "diagram": [
-      {
-        "title": "Describe the interaction",
-        "description": "Write the starting state, the action, and the behavior you expect."
-      },
-      {
-        "title": "Build and record",
-        "description": "Use Codex for the interface and ElevenLabs for the scripted clips."
-      },
-      {
-        "title": "Review in the browser",
-        "description": "Trigger, interrupt, and mute playback while checking the matching caption."
-      }
-    ]
-  }
 ]
+
+export const posts = [agentPost, ...originalPosts, ...researchPosts, ...androidPosts, ...workflowPosts]

@@ -32,8 +32,11 @@ function blogFallback(post?: BlogPost) {
   const sources = post.sources.filter(source => /^https?:\/\//i.test(source.href)).map(source => (
     `<li><a href="${escapeHtml(source.href)}">${escapeHtml(source.label)}</a></li>`
   )).join('')
+  const alternatives = post.diagramBranches?.map(branch => (
+    `<li><strong>${escapeHtml(branch.title)}</strong><p>${escapeHtml(branch.description)}</p></li>`
+  )).join('')
 
-  return `<main class="blog-fallback"><a href="/blog/">All articles</a><article><h1>${escapeHtml(post.title)}</h1><p>By ${escapeHtml(profile.name)}</p><p>${escapeHtml(post.excerpt)}</p>${sections}<h2>Steps at a glance</h2><ol>${diagram}</ol><h2>Sources</h2><ul>${sources}</ul></article></main>`
+  return `<main class="blog-fallback"><a href="/blog/">All articles</a><article><h1>${escapeHtml(post.title)}</h1><p>By ${escapeHtml(profile.name)}</p><p>${escapeHtml(post.excerpt)}</p>${sections}<h2>${escapeHtml(post.diagramTitle ?? 'Steps at a glance')}</h2><ol>${diagram}</ol>${alternatives ? `<h2>What if something goes wrong?</h2><ul>${alternatives}</ul>` : ''}<h2>Sources</h2><ul>${sources}</ul></article></main>`
 }
 
 function blogPages(): Plugin {
@@ -57,7 +60,7 @@ function blogPages(): Plugin {
         const pages: { path: string; title: string; description: string; post?: BlogPost }[] = [{
           path: '/blog/',
           title: `Blog | ${author}`,
-          description: `Articles by ${author} on AI, technical SEO, SaaS, and tools for building software.`,
+          description: `Articles by ${author} on AI, Android, open source, SEO, SaaS, and coding-agent workflows.`,
         }]
 
         for (const post of posts) {
