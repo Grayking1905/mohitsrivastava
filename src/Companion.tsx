@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as T from 'three'
 import gsap from 'gsap'
 import { createMascotRig } from './mascotRig'
+import { solveArm, springStep } from './naturalMotion'
 import type { Activity } from './useMascotActivity'
 
 export type Pose = 'idle' | 'wave' | 'read' | 'explore' | 'explain' | 'think' | 'celebrate' | 'spin' | 'dance' | 'panic' | 'fly' | 'vanish' | 'sneeze' | 'selfie' | 'hiccup' | 'peekaboo' | 'sulk' | 'punch' | 'dizzy'
@@ -66,6 +67,10 @@ export default function Companion(props: Props) {
     const quad=new T.Mesh(new T.PlaneGeometry(2,2),postMaterial);postScene.add(quad)
     const weights=emptyWeights(),motion={turn:0,reveal:1,close:current.current.closeup?1:0}
     const gaze={x:0,y:0,speech:0};const p=pointer.current
+    const joints=[rig.body,rig.head,...rig.arms.flatMap(a=>[a.shoulder,a.elbow,a.wrist,a.thumb,a.thumbTip,...a.fingers.flatMap(f=>[f.base,f.middle,f.tip])]),...rig.legs.flatMap(l=>[l.hip,l.knee])]
+    const settled=joints.map(j=>j.quaternion.clone())
+    const waveSpring={value:0,velocity:0}, rootHeight={value:0,velocity:0}
+    const footPoint=new T.Vector3(), parentRotation=new T.Quaternion(), footHeading=new T.Quaternion()
     let width=1,height=1,visible=true,lastTime=0,started=0,frameStarted=0,lastKey='',lastReduced=current.current.reduced,lastClose=current.current.closeup
     let blend:gsap.core.Tween|undefined,framing:gsap.core.Tween|undefined,reaction:gsap.core.Timeline|undefined
     const resize=new ResizeObserver(()=>{
@@ -124,16 +129,21 @@ export default function Companion(props: Props) {
       const alpha=reduced?1:1-Math.exp(-dt*8)
       gaze.x=T.MathUtils.lerp(gaze.x,p.x,alpha);gaze.y=T.MathUtils.lerp(gaze.y,p.y,alpha)
       const w=weights, sleepy=w.sleep+w.drowsy*.45
-      const dance=w.dance*Math.sin(clock*6),panicking=w.panic*Math.sin(clock*15),bounce=(1-Math.cos(clock*9))/2
+      const wavePhase=Math.max(0,t-.65), waveEnvelope=reduced?0:T.MathUtils.smoothstep(wavePhase,0,.35)*(1-T.MathUtils.smoothstep(wavePhase,3.5,4.4))
+      const waveTarget=Math.sin(wavePhase*5.5)*.24*waveEnvelope
+      const waveSwing=reduced?0:springStep(waveSpring,waveTarget,dt,18)
+      const dance=w.dance*Math.sin(clock*3.8),panicking=w.panic*Math.sin(clock*8),bounce=(1-Math.cos(clock*5))/2
       const hiccup=w.hiccup*Math.pow(Math.max(0,Math.sin(t*3.6)),22)
       const sneeze=w.sneeze*(t<1.5?-Math.sin(t*3)*.12:Math.exp(-(t-1.5)*3)*Math.sin((t-1.5)*14)*.55)
       const flight=w.fly*(reduced?0:Math.sin(Math.min(t/5,1)*Math.PI))
       const waking=w.wake*(reduced?0:Math.sin(Math.min(t/1.3,1)*Math.PI))
       const breath=(reduced?0:Math.sin(clock*2))*(.015+w.sleep*.025)
-      rig.root.position.set(reduced?0:p.shift,(reduced?0:p.lift)+breath+w.celebrate*bounce*.13+Math.abs(dance)*.06+hiccup*.09+flight*.4+waking*.12,0)
+      rig.root.position.set(reduced?0:p.shift,0,0)
       rig.root.rotation.set(-flight*.18,(reduced?0:p.yaw+motion.turn)+T.MathUtils.lerp(.12,-.07,motion.close)+dance*.15+w.dizzy*Math.sin(clock*4)*.32,flight*.22+panicking*.025-(reduced?0:p.shift*.16))
-      rig.body.rotation.z=dance*.045+w.sleep*.04+w.sulk*-.06
+      rig.body.rotation.set(breath*.35+w.read*.025+w.sulk*.035, w.wave*-.055+w.explain*Math.sin(clock*1.8)*.025, dance*.035+w.sleep*.025-w.sulk*.03-w.wave*.025)
       rig.head.rotation.set(sleepy*.26+w.read*.24-w.think*.08+sneeze-waking*.16+w.peekaboo*.12+w.sulk*.14+gaze.y*.07*(1-sleepy),gaze.x*.23*(1-Math.max(sleepy,w.read,w.peekaboo))+w.read*Math.sin(clock*1.8)*.095+w.explore*.12+w.panic*Math.sin(clock*7)*.15+w.dizzy*Math.sin(clock*5)*.25,w.sleep*.12-w.think*.12+w.selfie*.1+dance*.07+w.dizzy*Math.cos(clock*5)*.13)
+      rig.head.rotation.x+=w.wave*Math.sin(Math.min(t,1.2)/1.2*Math.PI)*.065
+      rig.head.rotation.z+=w.wave*.035
       const blink=reduced||sleepy>.5?1:1-.995*Math.pow(Math.max(0,Math.cos(clock*1.2)),210)
       const peek=w.peekaboo*T.MathUtils.smoothstep(Math.cos(clock*3),-.5,.45)
       rig.eyes.forEach(({pivot,open,closed,brow,side},index)=>{
@@ -151,9 +161,10 @@ export default function Companion(props: Props) {
       const mouthOpen=.115+gaze.speech-w.read*.068-w.sleep*.055+w.sleep*Math.sin(clock*1.7)*.025+w.panic*.14+hiccup*.12-w.sulk*.091+w.celebrate*.06+waking*.15
       rig.expression(mouthWidth,Math.max(.018,mouthOpen),1-w.sleep-w.panic-w.sulk*1.9-waking)
       rig.legs.forEach(({hip,knee,side})=>{
-        hip.rotation.x=w.dance*Math.sin(clock*6+side)*.22+flight*.22
-        hip.rotation.z=side*(w.celebrate*.10+w.fly*.12)
-        knee.rotation.x=Math.max(0,-Math.sin(clock*6+side))*.28*w.dance+flight*.35
+        const bend=.035+w.dance*(.10+.09*Math.sin(clock*3.8+side))+w.celebrate*bounce*.16+flight*.35
+        knee.rotation.x=bend
+        hip.rotation.x=-bend*.48+flight*.12
+        hip.rotation.z=side*w.fly*.12
       })
       rig.arms.forEach((arm,index)=>{
         const side=arm.side
@@ -161,7 +172,7 @@ export default function Companion(props: Props) {
         const pose=(mix:number,x:number,z:number,e:number,wrist=0)=>{sx=T.MathUtils.lerp(sx,x,mix);sz=T.MathUtils.lerp(sz,side*z,mix);ex=T.MathUtils.lerp(ex,e,mix);wz=T.MathUtils.lerp(wz,side*wrist,mix)}
         pose(w.read,-.95,.06,-.95)
         pose(w.celebrate,-.15,2.45,-.25)
-        pose(w.dance,-.25,1.5+Math.sin(clock*6+side)*.5,-.9+Math.sin(clock*6)*.3)
+        pose(w.dance,-.30,1.0+Math.sin(clock*3.8+side)*.25,-.95+Math.sin(clock*3.8-.3)*.15)
         pose(w.panic,-.25,2.4,-.7)
         pose(w.fly,0,1.55,-.15)
         pose(w.peekaboo,-1.65,.64,-1.06)
@@ -169,7 +180,7 @@ export default function Companion(props: Props) {
         pose(w.sulk,-1.0,.17,-1.45)
         pose(w.sleep,.02,.18,-.1)
         if(index===1){
-          pose(w.wave,-.12,2.18+Math.sin(clock*4.5)*.045,-.25,Math.sin(clock*4.5)*.19)
+          pose(w.wave,-.25,.7,-1.5)
           pose(w.explore,-1.91,.38,-.70,.18)
           pose(w.selfie,-1.48,.71,-1.03,-.34)
           pose(w.think,-1.88,.17,-.78)
@@ -186,7 +197,7 @@ export default function Companion(props: Props) {
         const openHand=Math.max(w.wave,w.celebrate,w.panic,w.peekaboo,w.explain)
         arm.fingers.forEach(({base,middle,tip,spread},i)=>{
           // Curl along the palm's normal; no independent finger oscillation.
-          const curl=grip+(1-openHand)*(1-grip)*.10
+          const curl=grip+(1-openHand)*(1-grip)*.10+w.wave*(index===1?.045+i*.012:0)
           const pointing=index===1&&i===0?w.think:0
           base.rotation.set(-(.75*curl)*(1-pointing),0,spread*(1-grip)*(.65+openHand*.35))
           middle.rotation.x=-1.05*curl*(1-pointing)
@@ -209,7 +220,38 @@ export default function Companion(props: Props) {
           arm.wrist.rotation.x=2.2*w.read
           arm.wrist.rotation.y=side*.65*w.read
         }
+        if(index===1&&w.wave>.001){
+          const wave=solveArm(arm.shoulder.position,new T.Vector3(1.12+waveSwing*.10,2.21,.28),new T.Vector3(1,-.35,0))
+          arm.shoulder.quaternion.slerp(wave.shoulder,w.wave)
+          arm.elbow.rotation.x=T.MathUtils.lerp(arm.elbow.rotation.x,wave.elbow,w.wave)
+          // Palm faces the viewer, fingers point up. Forearm carries most of the
+          // motion; the wrist follows with a small, anatomically bounded sway.
+          const elbowQ=new T.Quaternion().setFromAxisAngle(new T.Vector3(1,0,0),wave.elbow)
+          const parentQ=wave.shoulder.clone().multiply(elbowQ)
+          const palmQ=new T.Quaternion().setFromEuler(new T.Euler(.08, Math.PI-.08, Math.PI+waveSwing))
+          arm.wrist.quaternion.slerp(parentQ.invert().multiply(palmQ),w.wave)
+        }
       })
+      // Different response rates give the head and hands a small follow-through
+      // while preventing an interrupted reaction from snapping the joints.
+      joints.forEach((joint,i)=>{
+        const rate=joint===rig.head?9:rig.arms.some(a=>a.wrist===joint)?16:12
+        settled[i].slerp(joint.quaternion,reduced?1:1-Math.exp(-dt*rate))
+        joint.quaternion.copy(settled[i])
+      })
+      rig.root.updateMatrixWorld(true)
+      footHeading.setFromAxisAngle(new T.Vector3(0,1,0),rig.root.rotation.y)
+      let lowest=Infinity
+      rig.legs.forEach(({ankle})=>{
+        ankle.parent!.getWorldQuaternion(parentRotation)
+        ankle.quaternion.copy(parentRotation.invert().multiply(footHeading))
+        ankle.updateWorldMatrix(false,true)
+        footPoint.set(0,-.1375,.12);ankle.localToWorld(footPoint)
+        lowest=Math.min(lowest,footPoint.y)
+      })
+      const lift=(reduced?0:p.lift)+flight*.4+waking*.035
+      const grounded=-1.2375-lowest+lift
+      rig.root.position.y=reduced?grounded:springStep(rootHeight,grounded,dt,20)
       rig.book.visible=w.read>.03;rig.book.scale.setScalar(Math.max(.001,w.read));rig.book.rotation.z=Math.sin(clock*1.4)*.015*w.read
       const pageTurn=T.MathUtils.smoothstep(Math.cos(clock*1.05),.75,1)
       rig.turningPage.rotation.y=-.2-Math.PI*pageTurn

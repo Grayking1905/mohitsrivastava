@@ -18,3 +18,12 @@
 - Wave keeps a stable open hand and uses slower wrist motion; each pose resets every finger and thumb joint.
 - Continuous skinned trouser geometry bends across the knee. Tapered calves, shaped shoes and laces replace disconnected leg blocks.
 - Production build passed. Wave, dance, reading, magnifier, phone, punch, peekaboo and return-to-wave were exercised in the browser. Ink and color renderings were inspected; no console errors were reported.
+
+## Coordinated motion refinement
+
+- Wave uses a two-bone arm solver, elbow pole and upright palm orientation with damped wrist sway. Arm lengths are preserved and the elbow stays bent.
+- All articulated joints ease between target poses at distinct response rates; head and wrist follow through rather than snapping.
+- Knees flex with the dance/celebration rhythm; ankles compensate body tilt and follow turn heading. Root-height damping keeps the lowest foot near the shared ground level.
+- This is procedural constrained animation, not a full rigid-body biomechanics simulation.
+- `node --experimental-strip-types --test tests/motion.test.mjs`: 2 tests passed (101 reachable wave targets, joint/length checks, 30/60/120 Hz spring convergence and interruption).
+- Production build passed. Browser checked wave, read-to-wave, dance, celebration, punch, spin, sleep/wake. No console errors observed.

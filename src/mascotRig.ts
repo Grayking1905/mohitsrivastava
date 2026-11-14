@@ -220,7 +220,7 @@ export function createMascotRig() {
     ellipsoid(ankle,shoe,[0,.015,.12],[.225,.15,.35])
     box(ankle,shoe,.37,.20,.33,0,.05,-.035,.09)
     for(let i=0;i<3;i++)tube(ankle,sole,[[-.12,.115-i*.012,.14+i*.06],[0,.14-i*.012,.15+i*.06],[.12,.115-i*.012,.14+i*.06]],.009)
-    return {hip,knee,side}
+    return {hip,knee,ankle,side}
   })
 
   const book=new T.Group();book.position.set(0,1.24,1.01);book.rotation.x=.17;body.add(book)
